@@ -6818,7 +6818,7 @@ VALUES
     ('11.75.05.2010','Darussalam');
 
     -- Provinsi SUmatera Utara
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('12','SUMATERA UTARA'),
     ('12.01','KAB. TAPANULI TENGAH'),
@@ -13422,7 +13422,7 @@ VALUES
 
     -- Provinsi Sumatera Barat
     -- Provinsi Sumatera Barat
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('13','SUMATERA BARAT'),
     ('13.01','KAB. PESISIR SELATAN'),
@@ -14784,7 +14784,7 @@ VALUES
     ('13.77.04.2016','Kajai');
 
     -- Provinsi Riau
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('14','RIAU'),
     ('14.01','KAB. KAMPAR'),
@@ -16835,7 +16835,7 @@ VALUES
     ('14.72.07.1005','Bumi Ayu');
 
     -- Provinsi Jambi
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('15','JAMBI'),
     ('15.01','KAB. KERINCI'),
@@ -18559,7 +18559,7 @@ VALUES
     ('15.72.08.2006','Sungai Ning');
 
     -- Provinsi Sumatera Selatan
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('16','SUMATERA SELATAN'),
     ('16.01','KAB. OGAN KOMERING ULU'),
@@ -22070,7 +22070,7 @@ VALUES
     ('16.74.06.2004','Tanjung Menang');
 
     -- Provinsi Bengkulu
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('17','BENGKULU'),
     ('17.01','KAB. BENGKULU SELATAN'),
@@ -23727,7 +23727,7 @@ VALUES
     ('17.71.09.1006','Lingkar Timur');
 
     -- Provinsi Lampung
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('18','LAMPUNG'),
     ('18.01','KAB. LAMPUNG SELATAN'),
@@ -26616,7 +26616,7 @@ VALUES
     ('18.72.05.1004','Margodadi');
 
     -- Provinsi Kepulauan Bangka Belitung
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('19','KEPULAUAN BANGKA BELITUNG'),
     ('19.01','KAB. BANGKA'),
@@ -27068,7 +27068,7 @@ VALUES
     ('19.71.07.1005','Semabung Baru');
 
     -- Provinsi Kepulauan RIAU
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('21','KEPULAUAN RIAU'),
     ('21.01','KAB. BINTAN'),
@@ -27573,7 +27573,7 @@ VALUES
     ('21.72.04.1005','Tanjung Unggat');
 
     -- Provinsi DKI Jakarta
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('31','DKI JAKARTA'),
     ('31.01','KAB. ADM. KEP. SERIBU'),
@@ -27895,7 +27895,7 @@ VALUES
     ('31.75.10.1008','Ceger');
 
     -- Provinsi Jawa Barat
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('32','JAWA BARAT'),
     ('32.01','KAB. BOGOR'),
@@ -34511,7 +34511,7 @@ VALUES
     ('32.79.04.2006','Kujangsari');
 
     -- Provinsi Jawa Tengah
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('33','JAWA TENGAH'),
     ('33.01','KAB. CILACAP'),
@@ -43689,7 +43689,7 @@ VALUES
     ('33.76.04.1007','Pesurungan Lor');
 
     -- Provinsi Daerah Istimewa Yogyakarta
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('34','DAERAH ISTIMEWA YOGYAKARTA'),
     ('34.01','KAB. KULON PROGO'),
@@ -44215,7 +44215,7 @@ VALUES
     ('34.71.14.1003','Purbayan');
 
     -- Provinsi Jawa Timur
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('35','JAWA TIMUR'),
     ('35.01','KAB. PACITAN'),
@@ -53425,7 +53425,7 @@ VALUES
     ('35.79.03.2007','Torongrejo');
 
     -- Provinsi Banten
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('36','BANTEN'),
     ('36.01','KAB. PANDEGLANG'),
@@ -55145,7 +55145,7 @@ VALUES
     ('36.74.07.1006','Bakti Jaya');
 
     -- Provinsi Bali
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('51','BALI'),
     ('51.01','KAB. JEMBRANA'),
@@ -55932,7 +55932,7 @@ VALUES
     ('51.71.04.2011','Peguyangan Kangin');
 
     -- Provinsi Nusa Tenggara Barat
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('52','NUSA TENGGARA BARAT'),
     ('52.01','KAB. LOMBOK BARAT'),
@@ -57214,7 +57214,7 @@ VALUES
     ('52.72.05.1010','Matakando');
 
     -- Provinsi Nusa Tenggara Timur
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('53','NUSA TENGGARA TIMUR'),
     ('53.01','KAB. KUPANG'),
@@ -60910,7 +60910,7 @@ VALUES
 
 
     -- Provinsi Kalimantan Barat
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('61','KALIMANTAN BARAT'),
     ('61.01','KAB. SAMBAS'),
@@ -63233,7 +63233,7 @@ VALUES
     ('61.72.05.1004','Pangmilang');
 
     -- Provinsi Kalimantan Tengah
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('62','KALIMANTAN TENGAH'),
     ('62.01','KAB. KOTAWARINGIN BARAT'),
@@ -64959,7 +64959,7 @@ VALUES
     ('62.71.05.1007','Bukit Sua');
 
     -- Provinsi Kalimantan Selatan
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('63','KALIMANTAN SELATAN'),
     ('63.01','KAB. TANAH LAUT'),
@@ -67141,7 +67141,7 @@ VALUES
     ('63.72.06.1004','Landasan Ulin Selatan');
 
     -- Provinsi Kalimantan Timur
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('64','KALIMANTAN TIMUR'),
     ('64.01','KAB. PASER'),
@@ -68299,7 +68299,7 @@ VALUES
     ('64.74.03.1003','Kanaan');
 
     -- Provinsi Kalimantan Utara
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('65','KALIMANTAN UTARA'),
     ('65.01','KAB. BULUNGAN'),
@@ -68846,7 +68846,7 @@ VALUES
     ('65.71.04.1003','Juata Kerikil');
 
     -- Provinsi Sulawesi Utara
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('71','SULAWESI UTARA'),
     ('71.01','KAB. BOLAANG MONGONDOW'),
@@ -70876,7 +70876,7 @@ VALUES
     ('71.74.04.1006','Mongkonai Barat');
 
     -- Provinsi Sulawesi Tengah
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('72','SULAWESI TENGAH'),
     ('72.01','KAB. BANGGAI'),
@@ -73086,7 +73086,7 @@ VALUES
     ('72.71.08.1008','Talise Valangguni');
 
     -- Provinsi Sulawesi Selatan
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('73','SULAWESI SELATAN'),
     ('73.01','KAB. KEPULAUAN SELAYAR'),
@@ -76474,7 +76474,7 @@ VALUES
     ('73.73.09.1005','Buntu Datu');
 
     -- Provinsi Sulawesi Tenggara
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('74','SULAWESI TENGGARA'),
     ('74.01','KAB. KOLAKA'),
@@ -79002,7 +79002,7 @@ VALUES
     ('74.72.08.1006','Nganganaumala');
 
     -- Provinsi Gorontalo
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('75','GORONTALO'),
     ('75.01','KAB. GORONTALO'),
@@ -79819,7 +79819,7 @@ VALUES
     ('75.71.09.1005','Siendeng');
 
     -- Provinsi Sulawesi Barat
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('76','SULAWESI BARAT'),
     ('76.01','KAB. PASANGKAYU'),
@@ -80547,7 +80547,7 @@ VALUES
     ('76.06.05.2011','Sanjango');
 
     -- Provinsi Maluku
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('81','MALUKU'),
     ('81.01','KAB. MALUKU TENGAH'),
@@ -81914,7 +81914,7 @@ VALUES
     ('81.72.05.2007','Niela');
 
     -- Provinsi Maluku Utara
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('82','MALUKU UTARA'),
     ('82.01','KAB. HALMAHERA BARAT'),
@@ -83228,7 +83228,7 @@ VALUES
     ('82.72.08.1007','Jiko Cobo');
 
     -- Provinsi Papua
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('91','PAPUA'),
     ('91.01','KAB. MERAUKE'),
@@ -89349,7 +89349,7 @@ VALUES
     ('91.71.05.2005','Waena');
 
     -- Provinsi Papua Barat
-    INSERT INTO wilayah (kode, nama)
+    INSERT INTO areas (code, name)
     VALUES
     ('92','PAPUA BARAT'),
     ('92.01','KAB. SORONG'),

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Tus1688/openmerce-backend/auth"
+	"github.com/Tus1688/openmerce-backend/database"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -12,6 +13,16 @@ import (
 
 func main() {
 	loadEnv()
+	err := database.NewMysql()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Print("Connected to mysql!")
+	err = database.NewRedis()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Print("Connected to redis!")
 	router := initRouter()
 	router.Run(":6000")
 }
@@ -33,7 +44,8 @@ func initRouter() *gin.Engine {
 
 	auth := router.Group("/api/v1/auth")
 	{
-		auth.POST("/register")
+		// user is unauthenticated
+		auth.POST("/register-1")
 	}
 	return router
 }
