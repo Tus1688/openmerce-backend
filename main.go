@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/Tus1688/openmerce-backend/auth"
+	"github.com/Tus1688/openmerce-backend/controllers"
 	"github.com/Tus1688/openmerce-backend/database"
+	"github.com/Tus1688/openmerce-backend/service/mailgun"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -35,6 +37,7 @@ func loadEnv() {
 		}
 	}
 	auth.JwtKey = []byte(os.Getenv("JWT_KEY"))
+	mailgun.ReadEnv()
 	log.Print("Loaded env!")
 }
 
@@ -45,7 +48,7 @@ func initRouter() *gin.Engine {
 	auth := router.Group("/api/v1/auth")
 	{
 		// user is unauthenticated
-		auth.POST("/register-1")
+		auth.POST("/register-1", controllers.RegisterEmail)
 	}
 	return router
 }
