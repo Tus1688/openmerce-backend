@@ -10,6 +10,11 @@ type ReqEmailVerification struct {
 	Email string `json:"email" binding:"required"`
 }
 
+type ReqEmailVerificationConfirmation struct {
+	Email string `json:"email" binding:"required"`
+	Code  int    `json:"code" binding:"required"`
+}
+
 type Customer struct {
 	ID             uuid.UUID `json:"id"`
 	Email          string    `json:"email"`

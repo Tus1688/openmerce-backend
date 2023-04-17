@@ -48,7 +48,8 @@ func initRouter() *gin.Engine {
 	auth := router.Group("/api/v1/auth")
 	{
 		// user is unauthenticated
-		auth.POST("/register-1", controllers.RegisterEmail)
+		auth.POST("/register-1", controllers.RegisterEmail)        // user get a verification code and retrieve httpOnly cookie with jwt token of the inputted email
+		auth.POST("/register-2", controllers.RegisterEmailConfirm) // user input the verification code and the jwt token to confirm the email
 	}
 	return router
 }

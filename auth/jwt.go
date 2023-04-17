@@ -9,13 +9,19 @@ import (
 
 var JwtKey []byte
 
-type JWTClaim struct {
+type JWTClaimAccessToken struct {
 	Uid string // user id
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(uid string, id string) (string, error) {
-	claims := &JWTClaim{
+type JWTClaimEmailVerfication struct {
+	Email  string // user email
+	Status bool   // email verification status
+	jwt.RegisteredClaims
+}
+
+func GenerateJWTAccessToken(uid string, id string) (string, error) {
+	claims := &JWTClaimAccessToken{
 		Uid: uid,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt: jwt.NewNumericDate(time.Now()),
@@ -30,10 +36,26 @@ func GenerateJWT(uid string, id string) (string, error) {
 	return tokenString, nil
 }
 
-func ExtractClaim(signedToken string) (*JWTClaim, error) {
+func GenerateJWTEmailVerification(email string, status bool) (string, error) {
+	claims := &JWTClaimEmailVerfication{
+		Email:  email,
+		Status: status,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt: jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(JwtKey)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+}
+
+func ExtractClaimAccessToken(signedToken string) (*JWTClaimAccessToken, error) {
 	token, err := jwt.ParseWithClaims(
 		signedToken,
-		&JWTClaim{},
+		&JWTClaimAccessToken{},
 		func(token *jwt.Token) (interface{}, error) {
 			return JwtKey, nil
 		},
@@ -41,7 +63,25 @@ func ExtractClaim(signedToken string) (*JWTClaim, error) {
 	if err != nil {
 		return nil, err
 	}
-	claims, ok := token.Claims.(*JWTClaim)
+	claims, ok := token.Claims.(*JWTClaimAccessToken)
+	if !ok {
+		return nil, fmt.Errorf("invalid token")
+	}
+	return claims, nil
+}
+
+func ExtractClaimEmailVerification(signedToken string) (*JWTClaimEmailVerfication, error) {
+	token, err := jwt.ParseWithClaims(
+		signedToken,
+		&JWTClaimEmailVerfication{},
+		func(token *jwt.Token) (interface{}, error) {
+			return JwtKey, nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := token.Claims.(*JWTClaimEmailVerfication)
 	if !ok {
 		return nil, fmt.Errorf("invalid token")
 	}
