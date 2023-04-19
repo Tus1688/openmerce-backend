@@ -51,6 +51,7 @@ func initRouter() *gin.Engine {
 		auth.POST("/register-1", controllers.RegisterEmail)        // user get a verification code and retrieve httpOnly cookie with jwt token of the inputted email
 		auth.POST("/register-2", controllers.RegisterEmailConfirm) // user input the verification code and the jwt token to confirm the email
 		auth.POST("/register-3", controllers.CreateAccount)        // user input everything else to create an account
+		auth.POST("/login", controllers.LoginCustomer)             // user login with email and password
 	}
 	return router
 }

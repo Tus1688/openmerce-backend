@@ -27,6 +27,16 @@ type ReqNewAccount struct {
 	Gender    string    `json:"gender" binding:"required"`
 }
 
+type ReqLogin struct {
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+type CustomerAuth struct {
+	ID             uuid.UUID
+	HashedPassword string
+}
+
 type Customer struct {
 	ID             uuid.UUID `json:"id"`
 	Email          string    `json:"email"`
@@ -77,4 +87,9 @@ func (s *ReqNewAccount) HashPassword() error {
 	}
 	s.Password = string(bytes)
 	return nil
+}
+
+func (s *CustomerAuth) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(s.HashedPassword), []byte(password))
+	return err == nil
 }

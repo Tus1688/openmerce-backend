@@ -28,8 +28,12 @@ func RegisterEmail(c *gin.Context) {
 	row := database.MysqlInstance.QueryRow("select email from customers where email = ?", request.Email)
 	var email string
 	err := row.Scan(&email)
-	if err != sql.ErrNoRows {
-		c.JSON(409, gin.H{"error": "Email already registered"})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(409, gin.H{"error": "Email already registered"})
+			return
+		}
+		c.Status(500)
 		return
 	}
 

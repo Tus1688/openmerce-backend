@@ -9,8 +9,7 @@ import (
 
 /*
 0 for awaiting email verification (email, verification code) (ttl: 15 minutes)
-1 for awaiting phone verification (phone, verification code) (ttl: 15 minutes)
-2 for refresh token (random_bytes, JWTClaims) (ttl: TBA)
+1 for refresh token key: JTI, value: JSON of user-agent and id (ttl: 1 day??)
 */
 var RedisInstance []*redis.Client
 var ctx = context.Background()
