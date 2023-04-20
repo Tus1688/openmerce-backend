@@ -9,9 +9,176 @@ CREATE TABLE customers(
     gender VARCHAR(6)
 );
 
+CREATE TABLE auth_logs(
+      id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+      customer_refer BINARY(16) NOT NULL,
+      timestamp datetime,
+      jti varchar(50),
+      user_agent varchar(255),
+      ip_address varchar(15),
+      action varchar(8),
+      INDEX customer_refer_idx(customer_refer),
+      INDEX timestamp_idx(timestamp),
+      FOREIGN KEY (customer_refer) REFERENCES customers(id)
+);
+
+CREATE TABLE areas (
+    code varchar(13) PRIMARY KEY,
+    name varchar(100),
+    INDEX areas_name_idx(name)
+);
+
+CREATE TABLE customer_addresses(
+    id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
+    customer_refer BINARY(16) NOT NULL,
+    label VARCHAR(30) NOT NULL,
+    full_address VARCHAR(255) NOT NULL,
+    note VARCHAR(45),
+    recipient_name VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(15) NOT NULL,
+    subdistrict varchar(13) NOT NULL,
+    district varchar(13) NOT NULL,
+    city varchar(13) NOT NULL,
+    province varchar(13) NOT NULL,
+    postal_code varchar(5) NOT NULL,
+    INDEX customer_refer_idx(customer_refer),
+    FOREIGN KEY (customer_refer) REFERENCES customers(id),
+    FOREIGN KEY (subdistrict) REFERENCES areas(code),
+    FOREIGN KEY (district) REFERENCES areas(code),
+    FOREIGN KEY (city) REFERENCES areas(code),
+    FOREIGN KEY (province) REFERENCES areas(code)
+);
+
+CREATE TABLE products(
+    id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
+    name VARCHAR(85) UNIQUE,
+    description VARCHAR(300),
+    price INT UNSIGNED,
+    weight SMALLINT UNSIGNED,
+    created_at datetime,
+    updated_at datetime,
+    deleted_at datetime
+);
+
+CREATE TABLE inventories(
+    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    product_refer BINARY(16) NOT NULL,
+    quantity INT UNSIGNED NOT NULL,
+    updated_at DATETIME,
+    INDEX inventories_product_refer_idx(product_refer),
+    FOREIGN KEY (product_refer) REFERENCES products(id)
+);
+
+CREATE TABLE cart_items(
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    product_refer BINARY(16) NOT NULL,
+    customer_refer BINARY(16) NOT NULL,
+    quantity SMALLINT UNSIGNED NOT NULL,
+    INDEX cart_items_customer_idx(customer_refer),
+    FOREIGN KEY (product_refer) REFERENCES products(id),
+    FOREIGN KEY (customer_refer) REFERENCES customers(id)
+);
+
+CREATE TABLE wishlists(
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    product_refer BINARY(16) NOT NULL,
+    customer_refer BINARY(16) NOT NULL,
+    INDEX wishlists_customer_idx(customer_refer),
+    FOREIGN KEY (product_refer) REFERENCES products(id),
+    FOREIGN KEY (customer_refer) REFERENCES customers(id)
+);
+
+CREATE TABLE couriers(
+    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(25) UNIQUE NOT NULL,
+    legal_name VARCHAR(255) NOT NULL,
+    taxid VARCHAR(16) NOT NULL,
+    email VARCHAR(72) NOT NULL,
+    phone_number VARCHAR(16) NOT NULL,
+    rep_name VARCHAR(60) NOT NULL
+);
+
+CREATE TABLE orders(
+    -- no auto increment to maintain data integrity
+    id BIGINT UNSIGNED PRIMARY KEY,
+    customer_refer BINARY(16) NOT NULL,
+    customer_address_refer BINARY(16) NOT NULL,
+    courier_refer INT UNSIGNED NOT NULL,
+    total_weight INT UNSIGNED NOT NULL,
+    freight_cost INT UNSIGNED,
+    item_cost INT UNSIGNED NOT NULL,
+    gross_amount INT UNSIGNED,
+    freight_booking_id VARCHAR(25),
+    created_at datetime,
+    updated_at datetime,
+    deleted_at datetime,
+    INDEX orders_customer_refer_idx(customer_refer),
+    FOREIGN KEY (customer_refer) REFERENCES customers(id),
+    FOREIGN KEY (customer_address_refer) REFERENCES customer_addresses(id),
+    FOREIGN KEY (courier_refer) REFERENCES couriers(id)
+);
+
+CREATE TABLE payments(
+    id BIGINT UNSIGNED PRIMARY KEY,
+    order_refer BIGINT UNSIGNED NOT NULL,
+    payment_type VARCHAR(100) NOT NULL,
+    transaction_id VARCHAR(100),
+    gross_amount INT UNSIGNED,
+    status VARCHAR(20),
+    created_at DATETIME,
+    updated_at DATETIME,
+    INDEX payments_order_refer_idx(order_refer),
+    FOREIGN KEY (order_refer) REFERENCES orders(id)
+);
+
+CREATE TABLE shipping_logs(
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    waybill VARCHAR(25) NOT NULL,
+    booking_id VARCHAR(25) NOT NULL,
+    message VARCHAR(500) NOT NULL,
+    tracking_code VARCHAR(5) NOT NULL,
+    timestamp DATETIME,
+    INDEX shipping_logs_booking_id_idx (booking_id)
+    -- FOREIGN KEY (booking_id) REFERENCES orders(freight_booking_id)
+);
+
+CREATE TABLE order_details(
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    order_refer BIGINT UNSIGNED NOT NULL,
+    product_refer BINARY(16) NOT NULL,
+    on_buy_name VARCHAR(85) NOT NULL,
+    on_buy_description VARCHAR(300) NOT NULL,
+    on_buy_price INT UNSIGNED NOT NULL,
+    on_buy_weight SMALLINT UNSIGNED NOT NULL,
+    quantity SMALLINT UNSIGNED NOT NULL,
+    INDEX order_details_order_refer(order_refer),
+    FOREIGN KEY (order_refer) REFERENCES orders(id),
+    FOREIGN KEY (product_refer) REFERENCES products(id)
+);
+
+CREATE TABLE reviews(
+    id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
+    order_detail_refer BIGINT UNSIGNED NOT NULL,
+    product_refer BINARY(16) NOT NULL,
+    rating TINYINT UNSIGNED NOT NULL,
+    review VARCHAR(255),
+    INDEX reviews_product_refer_idx (product_refer),
+    FOREIGN KEY (order_detail_refer) REFERENCES order_details(id),
+    FOREIGN KEY (product_refer) REFERENCES products(id)
+);
+
+CREATE TABLE staffs(
+    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(32) UNIQUE NOT NULL,
+    hashed_password BINARY(60) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    fin_user BOOLEAN NOT NULL DEFAULT FALSE,
+    inv_user BOOLEAN NOT NULL DEFAULT FALSE,
+    sys_admin BOOLEAN NOT NULL DEFAULT FALSE
+);
+
 CREATE TABLE blacklist_domains (
-    domain_name VARCHAR(255),
-    INDEX domain_name_idx(domain_name)
+    domain_name VARCHAR(255) UNIQUE
 )
 PARTITION BY RANGE COLUMNS(domain_name) (
     PARTITION p0 VALUES LESS THAN ('1'),

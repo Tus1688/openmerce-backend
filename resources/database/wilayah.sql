@@ -1,7 +1,3 @@
-CREATE TABLE IF NOT EXISTS areas (
-    code varchar(13) NOT NULL,
-    name varchar(100) DEFAULT NULL
-);
 -- Provinsi Aceh
 INSERT INTO areas (code, name) 
 VALUES
