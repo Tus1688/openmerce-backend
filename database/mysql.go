@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -37,5 +39,27 @@ func NewMysql() error {
 	MysqlInstance.SetMaxOpenConns(maxOpenConns)
 	MysqlInstance.SetMaxIdleConns(maxIdleConns)
 	MysqlInstance.SetConnMaxLifetime(connMaxLifetime)
+	return nil
+}
+
+func InitAdminAccount() error {
+	username := os.Getenv("ADMIN_USERNAME")
+	if username == "" {
+		username = "admin"
+	}
+	password := os.Getenv("ADMIN_PASSWORD")
+	if password == "" {
+		return fmt.Errorf("admin password is empty")
+	}
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	//	insert into staff table
+	_, err = MysqlInstance.Exec("INSERT INTO staffs (username, hashed_password, name, fin_user, inv_user, sys_admin) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE hashed_password=VALUES(hashed_password), name=VALUES(name), fin_user=VALUES(fin_user), inv_user=VALUES(inv_user), sys_admin=VALUES(sys_admin)",
+		username, string(bytes), "superadmin", true, true, true)
+	if err != nil {
+		return err
+	}
 	return nil
 }

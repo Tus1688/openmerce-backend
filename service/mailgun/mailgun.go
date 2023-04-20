@@ -11,7 +11,7 @@ type mailgun struct {
 	Domain string
 }
 
-type MailgunSend struct {
+type Send struct {
 	FromName    string
 	FromAddress string
 	To          string
@@ -19,7 +19,7 @@ type MailgunSend struct {
 	Body        string
 }
 
-func SendEmail(send MailgunSend) error {
+func SendEmail(send Send) error {
 	baseUrl := "https://api.mailgun.net/v3/" + creds.Domain + "/messages"
 	data := url.Values{
 		"from":    {send.FromName + " <" + send.FromAddress + "@" + creds.Domain + ">"},

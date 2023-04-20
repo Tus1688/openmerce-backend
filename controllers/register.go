@@ -18,7 +18,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// user is unauthenticated and wants to register an account
+// RegisterEmail is for unauthenticated and wants to register an account
 func RegisterEmail(c *gin.Context) {
 	var request models.ReqEmailVerification
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -44,8 +44,8 @@ func RegisterEmail(c *gin.Context) {
 	}
 
 	// generate a random 6-digit number
-	big := big.NewInt(999999)
-	randNumber, err := rand.Int(rand.Reader, big)
+	code := big.NewInt(999999)
+	randNumber, err := rand.Int(rand.Reader, code)
 	if err != nil {
 		c.Status(500)
 		return
@@ -56,7 +56,7 @@ func RegisterEmail(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	err = mailgun.SendEmail(mailgun.MailgunSend{
+	err = mailgun.SendEmail(mailgun.Send{
 		FromName:    "Openmerce Auth Service",
 		FromAddress: "noreply",
 		To:          request.Email,
@@ -103,7 +103,7 @@ func RegisterEmailConfirm(c *gin.Context) {
 		return
 	}
 	if claims.IssuedAt.Time.Add(time.Minute * 5).Before(time.Now()) {
-		// the reason we give 403 is because the token should be deleted from the user's browser after 5 minutes
+		// the reason we give 403 because the token should be deleted from the user's browser after 5 minutes
 		// same as the token in redis
 		c.Status(403)
 		return
@@ -124,14 +124,14 @@ func RegisterEmailConfirm(c *gin.Context) {
 		return
 	}
 	// generate a JWT token with the email and send it to the user as a httpOnly cookie
-	tokenstring, err := auth.GenerateJWTEmailVerification(request.Email, true)
+	tokenString, err := auth.GenerateJWTEmailVerification(request.Email, true)
 	if err != nil {
 		c.Status(500)
 		return
 	}
 	c.SetSameSite(http.SameSiteStrictMode)
 	// set the cookie to expire in 10 minutes so that the user can register an account
-	c.SetCookie("email", tokenstring, 600, "/", "", false, true)
+	c.SetCookie("email", tokenString, 600, "/", "", false, true)
 	c.Status(200)
 }
 
@@ -161,7 +161,7 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 	if claims.IssuedAt.Time.Add(time.Minute * 10).Before(time.Now()) {
-		// the reason we give 401 is because the token should be deleted from the user's browser after 10 minutes
+		// the reason we give 401 because the token should be deleted from the user's browser after 10 minutes
 		// check register-2 for more info
 		c.Status(401)
 		return
@@ -182,7 +182,7 @@ func CreateAccount(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	// try to input the user into the database, if there is an conflict then the email is already registered and should return 409
+	// try to input the user into the database, if there is a conflict then the email is already registered and should return 409
 	_, err = database.MysqlInstance.Exec("insert into customers (email, hashed_password, first_name, last_name, birth_date, gender) values (?, ?, ?, ?, ?, ?)",
 		request.Email, request.Password, request.FirstName, request.LastName, request.BirthDate, request.Gender)
 	if err != nil {

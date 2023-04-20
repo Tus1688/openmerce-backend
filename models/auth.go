@@ -35,6 +35,8 @@ type ReqLogin struct {
 type CustomerAuth struct {
 	ID             uuid.UUID
 	HashedPassword string
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
 }
 
 type Customer struct {

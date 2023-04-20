@@ -20,7 +20,9 @@ func LoginCustomer(c *gin.Context) {
 		return
 	}
 	var customer models.CustomerAuth
-	err := database.MysqlInstance.QueryRow("select id, hashed_password from customers where email = ?", request.Email).Scan(&customer.ID, &customer.HashedPassword)
+	err := database.MysqlInstance.
+		QueryRow("select id, hashed_password, first_name, last_name from customers where email = ?", request.Email).
+		Scan(&customer.ID, &customer.HashedPassword, &customer.FirstName, &customer.LastName)
 	if err != nil {
 		c.Status(401)
 		return
@@ -50,5 +52,8 @@ func LoginCustomer(c *gin.Context) {
 	// 3 minutes expiration for each token
 	c.SetCookie("access_token", token, 60*3, "/", "", false, true)
 	c.SetCookie("refresh_token", refreshToken, 60*60*24*14, "/", "", false, true)
-	c.Status(200)
+	c.JSON(200, gin.H{
+		"first_name": customer.FirstName,
+		"last_name":  customer.LastName,
+	})
 }
