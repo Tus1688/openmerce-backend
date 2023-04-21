@@ -17,7 +17,7 @@ type ReqEmailVerificationConfirmation struct {
 	Code  int    `json:"code" binding:"required"`
 }
 
-// happen after user has verified their email
+// ReqNewAccount happen after user has verified their email
 type ReqNewAccount struct {
 	Email     string    `json:"email" binding:"required"`
 	Password  string    `json:"password" binding:"required"`
@@ -53,19 +53,48 @@ type StaffAuth struct {
 	SysAdmin       bool `json:"sys_admin"`
 }
 
-type Customer struct {
-	ID             uuid.UUID `json:"id"`
-	Email          string    `json:"email"`
-	HashedPassword string    `json:"hashed_password"`
-	PhoneNumber    string    `json:"phone_number"`
-	FirstName      string    `json:"first_name"`
-	LastName       string    `json:"last_name"`
-	BirthDate      time.Time `json:"birth_date"`
-	Gender         string    `json:"gender"`
+type NewStaff struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	FinUser  bool   `json:"fin_user"`
+	InvUser  bool   `json:"inv_user"`
+	SysAdmin bool   `json:"sys_admin"`
 }
 
 // PasswordIsValid validate password is at least 8 characters long and contains at least one uppercase letter, one lowercase letter, and one number
 func (s *ReqNewAccount) PasswordIsValid() bool {
+	if len(s.Password) < 8 {
+		return false
+	}
+
+	var (
+		hasUpper   bool
+		hasLower   bool
+		hasSpecial bool
+		hasNumber  bool
+	)
+
+	for _, char := range s.Password {
+		switch {
+		case unicode.IsUpper(char):
+			hasUpper = true
+		case unicode.IsLower(char):
+			hasLower = true
+		case unicode.IsPunct(char) || unicode.IsSymbol(char):
+			hasSpecial = true
+		case unicode.IsNumber(char):
+			hasNumber = true
+		}
+		if hasUpper && hasLower && hasSpecial && hasNumber {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *NewStaff) PasswordIsValid() bool {
 	if len(s.Password) < 8 {
 		return false
 	}
@@ -105,10 +134,20 @@ func (s *ReqNewAccount) HashPassword() error {
 	return nil
 }
 
+func (s *NewStaff) HashPassword() error {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(s.Password), 10)
+	if err != nil {
+		return err
+	}
+	s.Password = string(bytes)
+	return nil
+}
+
 func (s *CustomerAuth) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(s.HashedPassword), []byte(password))
 	return err == nil
 }
+
 func (s *StaffAuth) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(s.HashedPassword), []byte(password))
 	return err == nil

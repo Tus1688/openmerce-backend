@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/Tus1688/openmerce-backend/middlewares"
+
 	"github.com/Tus1688/openmerce-backend/auth"
 	"github.com/Tus1688/openmerce-backend/controllers"
 	"github.com/Tus1688/openmerce-backend/database"
@@ -66,6 +68,11 @@ func initRouter() *gin.Engine {
 	{
 		staffAuth.POST("/login", controllers.LoginStaff)
 		staffAuth.GET("/refresh", controllers.RefreshTokenStaff)
+	}
+
+	staffConsole := router.Group("/api/v1/staff/console").Use(middlewares.TokenExpiredStaff(1))
+	{
+		staffConsole.POST("/staff", controllers.AddNewStaff)
 	}
 	return router
 }

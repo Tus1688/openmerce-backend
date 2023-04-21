@@ -79,7 +79,10 @@ func LoginStaff(c *gin.Context) {
 	jti := auth.GenerateRandomString(16)
 	refreshToken := auth.GenerateRandomString(32)
 	// make a json string that contains "user-agent": userAgent, "id": staff.ID, "username": staff.Username, "FinUser": staff.FinUser, "InvUser": staff.InvUser, "SysAdmin": staff.SysAdmin, "jti": jti
-	jsonString := strings.Join([]string{"{\"user-agent\":\"", userAgent, "\",\"id\":", strconv.FormatUint(uint64(staff.ID), 10), ",\"username\":\"", staff.Username, "\",\"FinUser\":", strconv.FormatBool(staff.FinUser), ",\"InvUser\":", strconv.FormatBool(staff.InvUser), ",\"SysAdmin\":", strconv.FormatBool(staff.SysAdmin), ",\"jti\":\"", jti, "\"}"}, "")
+	jsonString := strings.Join([]string{"{\"user-agent\":\"", userAgent, "\",\"id\":",
+		strconv.FormatUint(uint64(staff.ID), 10), ",\"username\":\"", staff.Username, "\",\"FinUser\":",
+		strconv.FormatBool(staff.FinUser), ",\"InvUser\":", strconv.FormatBool(staff.InvUser), ",\"SysAdmin\":",
+		strconv.FormatBool(staff.SysAdmin), ",\"jti\":\"", jti, "\"}"}, "")
 	err = database.RedisInstance[2].Set(context.Background(), refreshToken, jsonString, 14*24*time.Hour).Err()
 	if err != nil {
 		c.Status(500)

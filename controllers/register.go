@@ -25,15 +25,14 @@ func RegisterEmail(c *gin.Context) {
 		c.Status(400)
 		return
 	}
-	row := database.MysqlInstance.QueryRow("select email from customers where email = ?", request.Email)
 	var email string
-	err := row.Scan(&email)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			c.JSON(409, gin.H{"error": "Email already registered"})
-			return
-		}
+	err := database.MysqlInstance.QueryRow("select email from customers where email = ?", request.Email).Scan(&email)
+	if err != nil && err != sql.ErrNoRows {
 		c.Status(500)
+		return
+	}
+	if email != "" {
+		c.JSON(409, gin.H{"error": "Email already registered"})
 		return
 	}
 
@@ -68,13 +67,13 @@ func RegisterEmail(c *gin.Context) {
 		return
 	}
 	// create a JWT token with the email and send it to the user as a httpOnly cookie
-	tokenstring, err := auth.GenerateJWTEmailVerification(request.Email, false)
+	tokenString, err := auth.GenerateJWTEmailVerification(request.Email, false)
 	if err != nil {
 		c.Status(500)
 		return
 	}
 	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie("email", tokenstring, 300, "/", "", false, true)
+	c.SetCookie("email", tokenString, 300, "/", "", false, true)
 	c.Status(200)
 }
 
@@ -183,8 +182,9 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 	// try to input the user into the database, if there is a conflict then the email is already registered and should return 409
-	_, err = database.MysqlInstance.Exec("insert into customers (email, hashed_password, first_name, last_name, birth_date, gender) values (?, ?, ?, ?, ?, ?)",
-		request.Email, request.Password, request.FirstName, request.LastName, request.BirthDate, request.Gender)
+	_, err = database.MysqlInstance.
+		Exec("insert into customers (email, hashed_password, first_name, last_name, birth_date, gender) values (?, ?, ?, ?, ?, ?)",
+			request.Email, request.Password, request.FirstName, request.LastName, request.BirthDate, request.Gender)
 	if err != nil {
 		// check from error if it is a duplicate entry error
 		if strings.Contains(err.Error(), "Duplicate entry") {
