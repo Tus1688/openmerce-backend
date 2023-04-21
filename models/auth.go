@@ -27,8 +27,13 @@ type ReqNewAccount struct {
 	Gender    string    `json:"gender" binding:"required"`
 }
 
-type ReqLogin struct {
+type ReqLoginCustomer struct {
 	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+type ReqLoginStaff struct {
+	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -37,6 +42,15 @@ type CustomerAuth struct {
 	HashedPassword string
 	FirstName      string `json:"first_name"`
 	LastName       string `json:"last_name"`
+}
+
+type StaffAuth struct {
+	ID             uint   `json:"id"`
+	Username       string `json:"username"`
+	HashedPassword string
+	FinUser        bool `json:"fin_user"`
+	InvUser        bool `json:"inv_user"`
+	SysAdmin       bool `json:"sys_admin"`
 }
 
 type Customer struct {
@@ -50,7 +64,7 @@ type Customer struct {
 	Gender         string    `json:"gender"`
 }
 
-// validate password is at least 8 characters long and contains at least one uppercase letter, one lowercase letter, and one number
+// PasswordIsValid validate password is at least 8 characters long and contains at least one uppercase letter, one lowercase letter, and one number
 func (s *ReqNewAccount) PasswordIsValid() bool {
 	if len(s.Password) < 8 {
 		return false
@@ -92,6 +106,10 @@ func (s *ReqNewAccount) HashPassword() error {
 }
 
 func (s *CustomerAuth) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(s.HashedPassword), []byte(password))
+	return err == nil
+}
+func (s *StaffAuth) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(s.HashedPassword), []byte(password))
 	return err == nil
 }

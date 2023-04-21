@@ -60,5 +60,10 @@ func initRouter() *gin.Engine {
 		customerAuth.POST("/register-3", controllers.CreateAccount)        // user input everything else to create an account
 		customerAuth.POST("/login", controllers.LoginCustomer)             // user login with email and password
 	}
+
+	staffAuth := router.Group("/api/v1/staff/auth")
+	{
+		staffAuth.POST("/login", controllers.LoginStaff)
+	}
 	return router
 }

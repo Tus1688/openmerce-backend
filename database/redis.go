@@ -9,7 +9,8 @@ import (
 
 /*
 0 for awaiting email verification (email, verification code) (ttl: 15 minutes)
-1 for refresh token key: JTI, value: JSON of user-agent and id (ttl: 1 day??)
+1 for refresh token customer key: refresh_token  value: JSON of user-agent and id (ttl: 14 day??)
+2 for refresh token staff key: refresh_token  value: JSON of user-agent, id, username, fin_user, inv_user, sys_admin (ttl: 14 day??)
 */
 var RedisInstance []*redis.Client
 var ctx = context.Background()

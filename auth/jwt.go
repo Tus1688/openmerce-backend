@@ -9,19 +9,28 @@ import (
 
 var JwtKey []byte
 
-type JWTClaimAccessToken struct {
+type JWTClaimAccessTokenCustomer struct {
 	Uid string // user id
 	jwt.RegisteredClaims
 }
 
-type JWTClaimEmailVerfication struct {
+type JWTClaimEmailVerification struct {
 	Email  string // user email
 	Status bool   // email verification status
 	jwt.RegisteredClaims
 }
 
-func GenerateJWTAccessToken(uid string, id string) (string, error) {
-	claims := &JWTClaimAccessToken{
+type JWTClaimAccessTokenStaff struct {
+	Id       uint
+	Username string
+	FinUser  bool
+	InvUser  bool
+	SysAdmin bool
+	jwt.RegisteredClaims
+}
+
+func GenerateJWTAccessTokenCustomer(uid string, id string) (string, error) {
+	claims := &JWTClaimAccessTokenCustomer{
 		Uid: uid,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt: jwt.NewNumericDate(time.Now()),
@@ -37,7 +46,7 @@ func GenerateJWTAccessToken(uid string, id string) (string, error) {
 }
 
 func GenerateJWTEmailVerification(email string, status bool) (string, error) {
-	claims := &JWTClaimEmailVerfication{
+	claims := &JWTClaimEmailVerification{
 		Email:  email,
 		Status: status,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -52,10 +61,29 @@ func GenerateJWTEmailVerification(email string, status bool) (string, error) {
 	return tokenString, nil
 }
 
-func ExtractClaimAccessToken(signedToken string) (*JWTClaimAccessToken, error) {
+func GenerateJWTAccessTokenStaff(id uint, username string, finUser bool, invUser bool, sysAdmin bool) (string, error) {
+	claims := &JWTClaimAccessTokenStaff{
+		Id:       id,
+		Username: username,
+		FinUser:  finUser,
+		InvUser:  invUser,
+		SysAdmin: sysAdmin,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt: jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(JwtKey)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+}
+
+func ExtractClaimAccessTokenCustomer(signedToken string) (*JWTClaimAccessTokenCustomer, error) {
 	token, err := jwt.ParseWithClaims(
 		signedToken,
-		&JWTClaimAccessToken{},
+		&JWTClaimAccessTokenCustomer{},
 		func(token *jwt.Token) (interface{}, error) {
 			return JwtKey, nil
 		},
@@ -63,17 +91,17 @@ func ExtractClaimAccessToken(signedToken string) (*JWTClaimAccessToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	claims, ok := token.Claims.(*JWTClaimAccessToken)
+	claims, ok := token.Claims.(*JWTClaimAccessTokenCustomer)
 	if !ok {
 		return nil, fmt.Errorf("invalid token")
 	}
 	return claims, nil
 }
 
-func ExtractClaimEmailVerification(signedToken string) (*JWTClaimEmailVerfication, error) {
+func ExtractClaimEmailVerification(signedToken string) (*JWTClaimEmailVerification, error) {
 	token, err := jwt.ParseWithClaims(
 		signedToken,
-		&JWTClaimEmailVerfication{},
+		&JWTClaimEmailVerification{},
 		func(token *jwt.Token) (interface{}, error) {
 			return JwtKey, nil
 		},
@@ -81,7 +109,25 @@ func ExtractClaimEmailVerification(signedToken string) (*JWTClaimEmailVerficatio
 	if err != nil {
 		return nil, err
 	}
-	claims, ok := token.Claims.(*JWTClaimEmailVerfication)
+	claims, ok := token.Claims.(*JWTClaimEmailVerification)
+	if !ok {
+		return nil, fmt.Errorf("invalid token")
+	}
+	return claims, nil
+}
+
+func ExtractClaimAccessTokenStaff(signedToken string) (*JWTClaimAccessTokenStaff, error) {
+	token, err := jwt.ParseWithClaims(
+		signedToken,
+		&JWTClaimAccessTokenStaff{},
+		func(token *jwt.Token) (interface{}, error) {
+			return JwtKey, nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := token.Claims.(*JWTClaimAccessTokenStaff)
 	if !ok {
 		return nil, fmt.Errorf("invalid token")
 	}
