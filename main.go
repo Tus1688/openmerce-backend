@@ -52,18 +52,20 @@ func initRouter() *gin.Engine {
 	router := gin.Default()
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
-	customerAuth := router.Group("/api/v1/auth")
+	customerAuth := router.Group("/api/v1/auth") // customer authentication are unprotected by any middleware
 	{
 		// user is unauthenticated
 		customerAuth.POST("/register-1", controllers.RegisterEmail)        // user get a verification code and retrieve httpOnly cookie with jwt token of the inputted email
 		customerAuth.POST("/register-2", controllers.RegisterEmailConfirm) // user input the verification code and the jwt token to confirm the email
 		customerAuth.POST("/register-3", controllers.CreateAccount)        // user input everything else to create an account
 		customerAuth.POST("/login", controllers.LoginCustomer)             // user login with email and password
+		customerAuth.GET("/refresh", controllers.RefreshTokenCustomer)     // user refresh the token
 	}
 
 	staffAuth := router.Group("/api/v1/staff/auth")
 	{
 		staffAuth.POST("/login", controllers.LoginStaff)
+		staffAuth.GET("/refresh", controllers.RefreshTokenStaff)
 	}
 	return router
 }

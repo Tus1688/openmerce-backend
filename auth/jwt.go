@@ -61,7 +61,7 @@ func GenerateJWTEmailVerification(email string, status bool) (string, error) {
 	return tokenString, nil
 }
 
-func GenerateJWTAccessTokenStaff(id uint, username string, finUser bool, invUser bool, sysAdmin bool) (string, error) {
+func GenerateJWTAccessTokenStaff(id uint, username string, finUser bool, invUser bool, sysAdmin bool, jti string) (string, error) {
 	claims := &JWTClaimAccessTokenStaff{
 		Id:       id,
 		Username: username,
@@ -70,6 +70,7 @@ func GenerateJWTAccessTokenStaff(id uint, username string, finUser bool, invUser
 		SysAdmin: sysAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt: jwt.NewNumericDate(time.Now()),
+			ID:       jti,
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
