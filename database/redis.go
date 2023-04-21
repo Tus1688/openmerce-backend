@@ -21,7 +21,7 @@ func NewRedis() error {
 		// create new redis client
 		addr := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
 		client := redis.NewClient(&redis.Options{
-			Addr:     os.Getenv(addr),
+			Addr:     addr,
 			Password: os.Getenv("REDIS_PASS"),
 			DB:       i,
 		})
