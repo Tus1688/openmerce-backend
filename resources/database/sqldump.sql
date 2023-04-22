@@ -6,7 +6,10 @@ CREATE TABLE customers(
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     birth_date DATETIME,
-    gender VARCHAR(6)
+    gender VARCHAR(6),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    deleted_at DATETIME
 );
 
 CREATE TABLE auth_logs(
@@ -174,7 +177,10 @@ CREATE TABLE staffs(
     name VARCHAR(100) NOT NULL,
     fin_user BOOLEAN NOT NULL DEFAULT FALSE,
     inv_user BOOLEAN NOT NULL DEFAULT FALSE,
-    sys_admin BOOLEAN NOT NULL DEFAULT FALSE
+    sys_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME,
+    updated_at DATETIME
 );
 
 CREATE TABLE blacklist_domains (

@@ -72,7 +72,9 @@ func initRouter() *gin.Engine {
 
 	staffConsole := router.Group("/api/v1/staff/console").Use(middlewares.TokenExpiredStaff(1))
 	{
+		staffConsole.GET("/staff", controllers.GetStaff)
 		staffConsole.POST("/staff", controllers.AddNewStaff)
+		staffConsole.PATCH("/staff", controllers.UpdateStaff)
 	}
 	return router
 }

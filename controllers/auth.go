@@ -65,7 +65,7 @@ func LoginStaff(c *gin.Context) {
 	}
 	var staff models.StaffAuth
 	err := database.MysqlInstance.
-		QueryRow("SELECT id, username, hashed_password, fin_user, inv_user, sys_admin FROM staffs WHERE username = ?", request.Username).
+		QueryRow("SELECT id, username, hashed_password, fin_user, inv_user, sys_admin FROM staffs WHERE username = ? and deleted_at is null", request.Username).
 		Scan(&staff.ID, &staff.Username, &staff.HashedPassword, &staff.FinUser, &staff.InvUser, &staff.SysAdmin)
 	if err != nil {
 		c.Status(401)
