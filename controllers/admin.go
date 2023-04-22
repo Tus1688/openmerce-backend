@@ -137,3 +137,42 @@ func UpdateStaff(c *gin.Context) {
 	}
 	c.Status(200)
 }
+
+func DeleteStaff(c *gin.Context) {
+	var request models.APICommonQueryID
+	if err := c.ShouldBindQuery(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	username := os.Getenv("ADMIN_USERNAME")
+	if username == "" {
+		username = "admin"
+	}
+	var superAdminID uint
+	err := database.MysqlInstance.QueryRow("select id from staffs where username = ?", username).Scan(&superAdminID)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	// the super admin id won't be higher than int
+	if request.ID == int(superAdminID) {
+		c.Status(403)
+		return
+	}
+	//	update the deleted_at column to the current timestamp
+	res, err := database.MysqlInstance.Exec("UPDATE staffs SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at is null", request.ID)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	if rowsAffected == 0 {
+		c.Status(404)
+		return
+	}
+	c.Status(200)
+}

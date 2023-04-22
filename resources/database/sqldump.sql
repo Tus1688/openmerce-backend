@@ -63,6 +63,14 @@ CREATE TABLE products(
     deleted_at datetime
 );
 
+CREATE TABLE product_images(
+    id BINARY(16)  PRIMARY KEY,
+    product_refer BINARY(16) NOT NULL,
+    created_at DATETIME,
+    INDEX product_images_product_refer_idx(product_refer),
+    FOREIGN KEY (product_refer) REFERENCES products(id)
+);
+
 CREATE TABLE inventories(
     id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     product_refer BINARY(16) NOT NULL,

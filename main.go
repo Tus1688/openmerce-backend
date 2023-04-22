@@ -75,6 +75,7 @@ func initRouter() *gin.Engine {
 		staffConsole.GET("/staff", controllers.GetStaff)
 		staffConsole.POST("/staff", controllers.AddNewStaff)
 		staffConsole.PATCH("/staff", controllers.UpdateStaff)
+		staffConsole.DELETE("/staff", controllers.DeleteStaff)
 	}
 	return router
 }
