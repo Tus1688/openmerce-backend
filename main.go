@@ -4,10 +4,11 @@ import (
 	"log"
 	"os"
 
+	authControllers "github.com/Tus1688/openmerce-backend/controllers/auth"
+	staffControllers "github.com/Tus1688/openmerce-backend/controllers/staff"
 	"github.com/Tus1688/openmerce-backend/middlewares"
 
 	"github.com/Tus1688/openmerce-backend/auth"
-	"github.com/Tus1688/openmerce-backend/controllers"
 	"github.com/Tus1688/openmerce-backend/database"
 	"github.com/Tus1688/openmerce-backend/service/mailgun"
 	"github.com/gin-gonic/contrib/gzip"
@@ -51,17 +52,17 @@ func initRouter() *gin.Engine {
 	customerAuth := router.Group("/api/v1/auth") // customer authentication are unprotected by any middleware
 	{
 		// user is unauthenticated
-		customerAuth.POST("/register-1", controllers.RegisterEmail)        // user get a verification code and retrieve httpOnly cookie with jwt token of the inputted email
-		customerAuth.POST("/register-2", controllers.RegisterEmailConfirm) // user input the verification code and the jwt token to confirm the email
-		customerAuth.POST("/register-3", controllers.CreateAccount)        // user input everything else to create an account
-		customerAuth.POST("/login", controllers.LoginCustomer)             // user login with email and password
-		customerAuth.GET("/refresh", controllers.RefreshTokenCustomer)     // user refresh the token
+		customerAuth.POST("/register-1", authControllers.RegisterEmail)        // user get a verification code and retrieve httpOnly cookie with jwt token of the inputted email
+		customerAuth.POST("/register-2", authControllers.RegisterEmailConfirm) // user input the verification code and the jwt token to confirm the email
+		customerAuth.POST("/register-3", authControllers.CreateAccount)        // user input everything else to create an account
+		customerAuth.POST("/login", authControllers.LoginCustomer)             // user login with email and password
+		customerAuth.GET("/refresh", authControllers.RefreshTokenCustomer)     // user refresh the token
 	}
 
 	staffAuth := router.Group("/api/v1/staff/auth")
 	{
-		staffAuth.POST("/login", controllers.LoginStaff)
-		staffAuth.GET("/refresh", controllers.RefreshTokenStaff)
+		staffAuth.POST("/login", authControllers.LoginStaff)
+		staffAuth.GET("/refresh", authControllers.RefreshTokenStaff)
 	}
 
 	// handle internal staff issue which won't be exposed to the public
@@ -69,23 +70,23 @@ func initRouter() *gin.Engine {
 		Use(middlewares.TokenExpiredStaff(1)).
 		Use(middlewares.TokenIsSysAdmin())
 	{
-		staffConsole.GET("/staff", controllers.GetStaff)
-		staffConsole.POST("/staff", controllers.AddNewStaff)
-		staffConsole.PATCH("/staff", controllers.UpdateStaff)
-		staffConsole.DELETE("/staff", controllers.DeleteStaff)
+		staffConsole.GET("/staff", authControllers.GetStaff)
+		staffConsole.POST("/staff", authControllers.AddNewStaff)
+		staffConsole.PATCH("/staff", authControllers.UpdateStaff)
+		staffConsole.DELETE("/staff", authControllers.DeleteStaff)
 	}
 
-	staffDashboard := router.Group("/api/v1/staff/dashboard").
-		// staff dashboard is protected by token expired middleware with 3 minutes (default)
-		// every staff can access the dashboard
-		Use(middlewares.TokenExpiredStaff(3)).
-		Use(middlewares.TokenIsSysAdmin())
+	// staff dashboard is protected by token expired middleware with 3 minutes (default)
+	// every staff can access the dashboard
+	staffDashboard := router.Group("/api/v1/staff/dashboard")
+	staffDashboard.Use(middlewares.TokenExpiredStaff(3))
 	{
-		staffDashboard.GET("/test", func(context *gin.Context) {
-			context.JSON(200, gin.H{
-				"message": "hello world",
-			})
-		})
+		// inventory only accessible by inventory user
+		inventory := staffDashboard.Group("/inventory")
+		inventory.Use(middlewares.TokenIsInvUser())
+		{
+			inventory.POST("/product-1", staffControllers.AddNewProduct)
+		}
 	}
 
 	return router

@@ -54,11 +54,11 @@ CREATE TABLE customer_addresses(
 
 CREATE TABLE products(
     id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-    name VARCHAR(85) UNIQUE,
-    description VARCHAR(300),
-    price INT UNSIGNED,
-    weight SMALLINT UNSIGNED,
-    created_at datetime,
+    name VARCHAR(85) UNIQUE NOT NULL,
+    description VARCHAR(300) NOT NULL,
+    price INT UNSIGNED NOT NULL,
+    weight SMALLINT UNSIGNED NOT NULL,
+    created_at datetime DEFAULT CURRENT_TIMESTAMP,
     updated_at datetime,
     deleted_at datetime
 );
@@ -66,7 +66,7 @@ CREATE TABLE products(
 CREATE TABLE product_images(
     id BINARY(16)  PRIMARY KEY,
     product_refer BINARY(16) NOT NULL,
-    created_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX product_images_product_refer_idx(product_refer),
     FOREIGN KEY (product_refer) REFERENCES products(id)
 );
@@ -120,7 +120,7 @@ CREATE TABLE orders(
     item_cost INT UNSIGNED NOT NULL,
     gross_amount INT UNSIGNED,
     freight_booking_id VARCHAR(25),
-    created_at datetime,
+    created_at datetime DEFAULT CURRENT_TIMESTAMP,
     updated_at datetime,
     deleted_at datetime,
     INDEX orders_customer_refer_idx(customer_refer),
@@ -136,7 +136,7 @@ CREATE TABLE payments(
     transaction_id VARCHAR(100),
     gross_amount INT UNSIGNED,
     status VARCHAR(20),
-    created_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME,
     INDEX payments_order_refer_idx(order_refer),
     FOREIGN KEY (order_refer) REFERENCES orders(id)
