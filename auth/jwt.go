@@ -7,7 +7,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var JwtKey []byte
+var JwtKeyCustomer []byte
+var JwtKeyStaff []byte
 
 type JWTClaimAccessTokenCustomer struct {
 	Uid string // user id
@@ -38,7 +39,7 @@ func GenerateJWTAccessTokenCustomer(uid string, id string) (string, error) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(JwtKey)
+	tokenString, err := token.SignedString(JwtKeyCustomer)
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +55,7 @@ func GenerateJWTEmailVerification(email string, status bool) (string, error) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(JwtKey)
+	tokenString, err := token.SignedString(JwtKeyCustomer)
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +75,7 @@ func GenerateJWTAccessTokenStaff(id uint, username string, finUser bool, invUser
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(JwtKey)
+	tokenString, err := token.SignedString(JwtKeyStaff)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +87,7 @@ func ExtractClaimAccessTokenCustomer(signedToken string) (*JWTClaimAccessTokenCu
 		signedToken,
 		&JWTClaimAccessTokenCustomer{},
 		func(token *jwt.Token) (interface{}, error) {
-			return JwtKey, nil
+			return JwtKeyCustomer, nil
 		},
 	)
 	if err != nil {
@@ -104,7 +105,7 @@ func ExtractClaimEmailVerification(signedToken string) (*JWTClaimEmailVerificati
 		signedToken,
 		&JWTClaimEmailVerification{},
 		func(token *jwt.Token) (interface{}, error) {
-			return JwtKey, nil
+			return JwtKeyCustomer, nil
 		},
 	)
 	if err != nil {
@@ -122,7 +123,7 @@ func ExtractClaimAccessTokenStaff(signedToken string) (*JWTClaimAccessTokenStaff
 		signedToken,
 		&JWTClaimAccessTokenStaff{},
 		func(token *jwt.Token) (interface{}, error) {
-			return JwtKey, nil
+			return JwtKeyStaff, nil
 		},
 	)
 	if err != nil {

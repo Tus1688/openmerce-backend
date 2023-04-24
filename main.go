@@ -12,7 +12,6 @@ import (
 	"github.com/Tus1688/openmerce-backend/service/mailgun"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -39,13 +38,8 @@ func main() {
 }
 
 func loadEnv() {
-	if os.Getenv("GIN_MODE") != "release" {
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
-	auth.JwtKey = []byte(os.Getenv("JWT_KEY"))
+	auth.JwtKeyCustomer = []byte(os.Getenv("JWT_KEY_CUSTOMER"))
+	auth.JwtKeyStaff = []byte(os.Getenv("JWT_KEY_STAFF"))
 	mailgun.ReadEnv()
 	log.Print("Loaded env!")
 }
@@ -70,12 +64,29 @@ func initRouter() *gin.Engine {
 		staffAuth.GET("/refresh", controllers.RefreshTokenStaff)
 	}
 
-	staffConsole := router.Group("/api/v1/staff/console").Use(middlewares.TokenExpiredStaff(1))
+	// handle internal staff issue which won't be exposed to the public
+	staffConsole := router.Group("/api/v1/staff/console").
+		Use(middlewares.TokenExpiredStaff(1)).
+		Use(middlewares.TokenIsSysAdmin())
 	{
 		staffConsole.GET("/staff", controllers.GetStaff)
 		staffConsole.POST("/staff", controllers.AddNewStaff)
 		staffConsole.PATCH("/staff", controllers.UpdateStaff)
 		staffConsole.DELETE("/staff", controllers.DeleteStaff)
 	}
+
+	staffDashboard := router.Group("/api/v1/staff/dashboard").
+		// staff dashboard is protected by token expired middleware with 3 minutes (default)
+		// every staff can access the dashboard
+		Use(middlewares.TokenExpiredStaff(3)).
+		Use(middlewares.TokenIsSysAdmin())
+	{
+		staffDashboard.GET("/test", func(context *gin.Context) {
+			context.JSON(200, gin.H{
+				"message": "hello world",
+			})
+		})
+	}
+
 	return router
 }
