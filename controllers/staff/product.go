@@ -1,7 +1,6 @@
 package staff
 
 import (
-	"log"
 	"strings"
 
 	"github.com/Tus1688/openmerce-backend/database"
@@ -11,15 +10,16 @@ import (
 )
 
 func AddNewProduct(c *gin.Context) {
-	var request models.ProductCreate1
+	var request models.ProductCreate
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.Status(400)
 		return
 	}
 	id := uuid.New()
 	// insert the new product
-	_, err := database.MysqlInstance.Exec("INSERT INTO products (id, name, description, price, weight) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)",
-		id, request.Name, request.Description, request.Price, request.Weight)
+	_, err := database.MysqlInstance.
+		Exec("INSERT INTO products (id, name, description, price, weight) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)",
+			id, request.Name, request.Description, request.Price, request.Weight)
 	if err != nil {
 		//	check if the product name already exists
 		if strings.Contains(err.Error(), "Duplicate entry") {
@@ -30,12 +30,12 @@ func AddNewProduct(c *gin.Context) {
 		return
 	}
 	// insert the new product into inventories
-	_, err = database.MysqlInstance.Exec("INSERT INTO inventories (product_refer, quantity, updated_at) VALUE (UUID_TO_BIN(?), ?, CURRENT_TIMESTAMP)",
-		id, 0)
+	_, err = database.MysqlInstance.
+		Exec("INSERT INTO inventories (product_refer, quantity, updated_at) VALUE (UUID_TO_BIN(?), ?, CURRENT_TIMESTAMP)",
+			id, request.InitialStock)
 	if err != nil {
-		log.Print(err)
 		c.Status(500)
 		return
 	}
-	c.Status(201)
+	c.JSON(201, gin.H{"id": id})
 }

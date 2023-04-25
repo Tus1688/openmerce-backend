@@ -20,7 +20,7 @@ services:
     container_name: redis
     restart: always
     ports:
-      - ${REDIS_PORT}:${REDIS_PORT}
+      - ${REDIS_PORT}:6379
     volumes:
       - redis:/data
 
