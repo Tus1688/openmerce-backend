@@ -52,15 +52,30 @@ CREATE TABLE customer_addresses(
     FOREIGN KEY (province) REFERENCES areas(code)
 );
 
+CREATE TABLE categories(
+    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    deleted_at DATETIME,
+    INDEX category_name_idx(name, deleted_at)
+);
+
 CREATE TABLE products(
     id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
     name VARCHAR(85) UNIQUE NOT NULL,
     description VARCHAR(300) NOT NULL,
     price INT UNSIGNED NOT NULL,
     weight SMALLINT UNSIGNED NOT NULL,
+    category_refer INT UNSIGNED NOT NULL,
     created_at datetime DEFAULT CURRENT_TIMESTAMP,
     updated_at datetime,
-    deleted_at datetime
+    deleted_at datetime,
+    INDEX product_check_exist_idx(id, deleted_at),
+    INDEX product_search_name_idx(name, deleted_at),
+    INDEX product_category_idx(category_refer, deleted_at),
+    FOREIGN KEY (category_refer) REFERENCES categories(id)
 );
 
 CREATE TABLE product_images(
@@ -130,7 +145,7 @@ CREATE TABLE orders(
 );
 
 CREATE TABLE payments(
-    id BIGINT UNSIGNED PRIMARY KEY,
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     order_refer BIGINT UNSIGNED NOT NULL,
     payment_type VARCHAR(100) NOT NULL,
     transaction_id VARCHAR(100),
@@ -174,6 +189,7 @@ CREATE TABLE reviews(
     rating TINYINT UNSIGNED NOT NULL,
     review VARCHAR(255),
     INDEX reviews_product_refer_idx (product_refer),
+    UNIQUE (order_detail_refer, product_refer),
     FOREIGN KEY (order_detail_refer) REFERENCES order_details(id),
     FOREIGN KEY (product_refer) REFERENCES products(id)
 );
