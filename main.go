@@ -42,6 +42,7 @@ func loadEnv() {
 	auth.JwtKeyCustomer = []byte(os.Getenv("JWT_KEY_CUSTOMER"))
 	auth.JwtKeyStaff = []byte(os.Getenv("JWT_KEY_STAFF"))
 	mailgun.ReadEnv()
+	staffControllers.NginxFSBaseUrl = os.Getenv("NGINX_FS_BASE_URL")
 	log.Print("Loaded env!")
 }
 
@@ -85,7 +86,12 @@ func initRouter() *gin.Engine {
 		inventory := staffDashboard.Group("/inventory")
 		inventory.Use(middlewares.TokenIsInvUser())
 		{
-			inventory.POST("/product-1", staffControllers.AddNewProduct)
+			inventory.GET("/category", staffControllers.GetCategories)
+			inventory.POST("/category", staffControllers.AddNewCategory)
+			inventory.DELETE("/category", staffControllers.DeleteCategory)
+
+			inventory.POST("/product-1", staffControllers.AddNewProduct) // handle product meta creation
+			inventory.POST("/product-2", staffControllers.AddImage)      // handle image upload
 		}
 	}
 

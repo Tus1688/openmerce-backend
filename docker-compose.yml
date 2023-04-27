@@ -13,7 +13,7 @@ services:
     ports:
       - ${DB_PORT}:3306
     volumes:
-      - mysql:/var/lib/mysql
+      - openmerce-mysql:/var/lib/mysql
 
   redis:
     image: redis:alpine
@@ -24,6 +24,18 @@ services:
     volumes:
       - redis:/data
 
+  nginx-fs:
+    image: ghcr.io/tus1688/go-nginx-fs:main
+    container_name: nginx-fs
+    restart: always
+    ports:
+      - ${NGINX_FS_PORT}:5000
+    volumes:
+      - openmerce-nginx-fs-data:/usr/share/nginx/html
+
 volumes:
-  mysql:
+  openmerce-mysql:
+    external: true
   redis:
+  openmerce-nginx-fs-data:
+    external: true
