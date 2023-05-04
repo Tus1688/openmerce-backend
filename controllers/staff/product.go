@@ -3,10 +3,13 @@ package staff
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/Tus1688/openmerce-backend/database"
 	"github.com/Tus1688/openmerce-backend/models"
@@ -110,4 +113,89 @@ func AddImage(c *gin.Context) {
 		return
 	}
 	c.JSON(201, gin.H{"file": response.File})
+}
+
+func DeleteProduct(c *gin.Context) {
+	var request models.APICommonQueryUUID
+	if err := c.ShouldBindQuery(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	//	try to delete the product by set deleted_at to current timestamp
+	res, err := database.MysqlInstance.Exec("UPDATE products SET deleted_at = CURRENT_TIMESTAMP WHERE id = UUID_TO_BIN(?) AND deleted_at IS NULL", request.ID)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	//	check if the product exists
+	affected, err := res.RowsAffected()
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	if affected == 0 {
+		c.Status(404)
+		return
+	}
+	//	try to delete product_images
+	var imageUrls []string
+	rows, err := database.MysqlInstance.Query("SELECT BIN_TO_UUID(id) FROM product_images WHERE product_refer = UUID_TO_BIN(?)", request.ID)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var imageUrl string
+		if err := rows.Scan(&imageUrl); err != nil {
+			c.Status(500)
+			return
+		}
+		imageUrls = append(imageUrls, imageUrl)
+	}
+
+	//	delete the images from NginxFS
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(imageUrls))
+	for _, imageUrl := range imageUrls {
+		wg.Add(1)
+		go func(targetUrl string) {
+			defer wg.Done()
+			url := NginxFSBaseUrl + "/handler?file=" + targetUrl + ".webp"
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			defer res.Body.Close()
+			if res.StatusCode != 200 && res.StatusCode != 404 {
+				// 404 considered as success as it maybe deleted by other request
+				errChan <- errors.New("failed to delete image from NginxFS with status code " + strconv.Itoa(res.StatusCode))
+				return
+			}
+			//	delete the image from product_images
+			_, err = database.MysqlInstance.Exec("DELETE FROM product_images WHERE id = UUID_TO_BIN(?)", targetUrl)
+			if err != nil {
+				errChan <- err
+				return
+			}
+		}(imageUrl)
+	}
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
+
+	for err := range errChan {
+		if err != nil {
+			c.Status(500)
+			return
+		}
+	}
+	c.Status(200)
 }
