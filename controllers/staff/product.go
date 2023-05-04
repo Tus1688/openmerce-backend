@@ -2,6 +2,7 @@ package staff
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -23,24 +24,52 @@ func AddNewProduct(c *gin.Context) {
 		c.Status(400)
 		return
 	}
-	id := uuid.New()
-	// insert the new product
-	_, err := database.MysqlInstance.
-		Exec("INSERT INTO products (id, name, description, price, weight, category_refer) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?)",
-			id, request.Name, request.Description, request.Price, request.Weight, request.CategoryID)
-	if err != nil {
-		//	check if the product name already exists
-		if strings.Contains(err.Error(), "Duplicate entry") {
-			c.JSON(409, gin.H{"error": "Product name already exists"})
-			return
-		}
+	var id uuid.UUID
+	// check if soft-delete product with the same name exists
+	var existingProductID uuid.UUID
+	err := database.MysqlInstance.
+		QueryRow("SELECT BIN_TO_UUID(id) FROM products WHERE name = ? AND deleted_at IS NOT NULL", request.Name).
+		Scan(&existingProductID)
+	if err != nil && err != sql.ErrNoRows {
 		c.Status(500)
 		return
 	}
+
+	if existingProductID != uuid.Nil {
+		//	update the deleted_at to NULL
+		_, err = database.MysqlInstance.
+			Exec("UPDATE products SET deleted_at = NULL, created_at = CURRENT_TIMESTAMP, updated_at = NULL  WHERE id = UUID_TO_BIN(?)", existingProductID)
+		if err != nil {
+			c.Status(500)
+			return
+		}
+		id = existingProductID
+	} else {
+		id = uuid.New()
+		// insert the new product
+		_, err = database.MysqlInstance.
+			Exec("INSERT INTO products (id, name, description, price, weight, category_refer) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?)",
+				id, request.Name, request.Description, request.Price, request.Weight, request.CategoryID)
+		if err != nil {
+			//	check if the product name already exists
+			if strings.Contains(err.Error(), "Duplicate entry") {
+				c.JSON(409, gin.H{"error": "Product name already exists"})
+				return
+			}
+			c.Status(500)
+			return
+		}
+	}
 	// insert the new product into inventories
-	_, err = database.MysqlInstance.
-		Exec("INSERT INTO inventories (product_refer, quantity, updated_at) VALUE (UUID_TO_BIN(?), ?, CURRENT_TIMESTAMP)",
-			id, request.InitialStock)
+	if existingProductID != uuid.Nil {
+		_, err = database.MysqlInstance.
+			Exec("UPDATE inventories SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE product_refer = UUID_TO_BIN(?)",
+				request.InitialStock, existingProductID)
+	} else {
+		_, err = database.MysqlInstance.
+			Exec("INSERT INTO inventories (product_refer, quantity, updated_at) VALUE (UUID_TO_BIN(?), ?, CURRENT_TIMESTAMP)",
+				id, request.InitialStock)
+	}
 	if err != nil {
 		c.Status(500)
 		return
