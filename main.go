@@ -89,6 +89,7 @@ func initRouter() *gin.Engine {
 			inventory.GET("/category", staffControllers.GetCategories)
 			inventory.POST("/category", staffControllers.AddNewCategory)
 			inventory.DELETE("/category", staffControllers.DeleteCategory)
+			inventory.PATCH("/category", staffControllers.UpdateCategory)
 
 			inventory.POST("/product-1", staffControllers.AddNewProduct) // handle product meta creation
 			inventory.POST("/product-2", staffControllers.AddImage)      // handle image upload
