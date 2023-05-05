@@ -39,14 +39,16 @@ type CategoryUpdate struct {
 
 // HomepageProductResponse is the model for the homepage product response
 type HomepageProductResponse struct {
-	CategoryID   uint   `json:"category_id"`
-	CategoryName string `json:"category_name"`
-	CategoryDesc string `json:"category_desc"`
-	Products     []struct {
-		ProductID     string  `json:"id"`
-		ProductName   string  `json:"name"`
-		ProductPrice  uint    `json:"price"`
-		ProductImage  string  `json:"image"`
-		ProductRating float64 `json:"rating"`
-	} `json:"products"`
+	CategoryID   uint              `json:"category_id"`
+	CategoryName string            `json:"category_name"`
+	CategoryDesc string            `json:"category_desc"`
+	Products     []HomepageProduct `json:"products"`
+}
+
+type HomepageProduct struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Price    uint    `json:"price"`
+	ImageUrl string  `json:"image"`
+	Rating   float64 `json:"rating"`
 }

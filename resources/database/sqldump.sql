@@ -85,6 +85,7 @@ CREATE TABLE product_images(
     product_refer BINARY(16) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX product_images_product_refer_idx(product_refer),
+    INDEX product_images_created_at_idx(created_at),
     FOREIGN KEY (product_refer) REFERENCES products(id)
 );
 

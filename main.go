@@ -5,6 +5,7 @@ import (
 	"os"
 
 	authControllers "github.com/Tus1688/openmerce-backend/controllers/auth"
+	globalControllers "github.com/Tus1688/openmerce-backend/controllers/global"
 	staffControllers "github.com/Tus1688/openmerce-backend/controllers/staff"
 	"github.com/Tus1688/openmerce-backend/middlewares"
 
@@ -96,6 +97,8 @@ func initRouter() *gin.Engine {
 			inventory.DELETE("/product", staffControllers.DeleteProduct) // delete product and its images
 		}
 	}
+	// global unprotected routes for public access
+	router.GET("/api/v1/product", globalControllers.GetProduct)
 
 	return router
 }
