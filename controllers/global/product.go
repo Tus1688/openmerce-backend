@@ -17,6 +17,35 @@ func GetProduct(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindQuery(&requestSearch); err == nil {
+		var response []models.HomepageProduct
+		rows, err := database.MysqlInstance.
+			Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, p.cumulative_review
+						 FROM products p
+						 LEFT JOIN (
+						   SELECT product_refer, MIN(created_at) AS min_created_at
+						   FROM product_images
+						   GROUP BY product_refer
+						 ) pi_min ON p.id = pi_min.product_refer
+						 LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
+						 WHERE p.deleted_at IS NULL and MATCH(p.name) AGAINST(? IN BOOLEAN MODE)`, requestSearch.Search+"*")
+		if err != nil {
+			c.Status(500)
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var product models.HomepageProduct
+			if err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating); err != nil {
+				c.Status(500)
+				return
+			}
+			response = append(response, product)
+		}
+		if response == nil {
+			c.Status(404)
+			return
+		}
+		c.JSON(200, response)
 		return
 	}
 	// return everything if no query is provided

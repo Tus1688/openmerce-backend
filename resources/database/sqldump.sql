@@ -75,8 +75,8 @@ CREATE TABLE products(
     updated_at datetime,
     deleted_at datetime,
     INDEX product_check_exist_idx(id, deleted_at),
-    INDEX product_search_name_idx(name, deleted_at),
     INDEX product_category_idx(category_refer, deleted_at),
+    FULLTEXT INDEX product_name_idx(name),
     FOREIGN KEY (category_refer) REFERENCES categories(id)
 );
 
