@@ -41,6 +41,7 @@ func GetProduct(c *gin.Context) {
 
 	var wg sync.WaitGroup
 	errChan := make(chan error)
+	mu := sync.Mutex{}
 	for _, category := range categories {
 		wg.Add(1)
 		go func(category uint) {
@@ -55,14 +56,15 @@ func GetProduct(c *gin.Context) {
 			}
 			//  get products in the category
 			rows, err := database.MysqlInstance.
-				Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, CONCAT(BIN_TO_UUID(pi.id), '.webp') as image, p.cumulative_review
-					FROM product_images pi
-					INNER JOIN (
-					  SELECT product_refer, MIN(created_at) AS min_created_at
-					  FROM product_images
-					  GROUP BY product_refer
-					) pi_min ON pi.product_refer = pi_min.product_refer AND pi.created_at = pi_min.min_created_at
-					INNER JOIN products p on pi.product_refer = p.id and p.deleted_at is null and p.category_refer = ?`, category)
+				Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, p.cumulative_review
+							 FROM products p
+							 LEFT JOIN (
+							   SELECT product_refer, MIN(created_at) AS min_created_at
+							   FROM product_images
+							   GROUP BY product_refer
+							 ) pi_min ON p.id = pi_min.product_refer
+							 LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
+							 WHERE p.deleted_at IS NULL and p.category_refer = ?`, category)
 			if err != nil {
 				errChan <- err
 				return
@@ -76,7 +78,9 @@ func GetProduct(c *gin.Context) {
 				}
 				chunk.Products = append(chunk.Products, product)
 			}
+			mu.Lock()
 			response = append(response, chunk)
+			mu.Unlock()
 		}(category)
 	}
 	go func() {
