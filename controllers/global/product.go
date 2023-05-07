@@ -17,17 +17,39 @@ func GetProduct(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindQuery(&requestSearch); err == nil {
+		sqlQuery :=
+			`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, p.cumulative_review
+			 FROM products p
+			 LEFT JOIN (
+			 	SELECT product_refer, MIN(created_at) AS min_created_at
+			 FROM product_images
+			 GROUP BY product_refer
+			 ) pi_min ON p.id = pi_min.product_refer
+			 LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
+			 WHERE p.deleted_at IS NULL AND MATCH(p.name) AGAINST(? IN BOOLEAN MODE)`
+		args := []interface{}{requestSearch.Search + "*"}
+		category := c.Query("category")
+		if category != "" {
+			sqlQuery += " AND category_refer = ?"
+			args = append(args, category)
+		}
+		priceFrom := c.Query("price_from")
+		if priceFrom != "" {
+			sqlQuery += " AND price >= ?"
+			args = append(args, priceFrom)
+		}
+		priceTo := c.Query("price_to")
+		if priceTo != "" {
+			sqlQuery += " AND price <= ?"
+			args = append(args, priceTo)
+		}
+		limit := c.Query("limit")
+		if limit != "" {
+			sqlQuery += " LIMIT ?"
+			args = append(args, limit)
+		}
 		var response []models.HomepageProduct
-		rows, err := database.MysqlInstance.
-			Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, p.cumulative_review
-						 FROM products p
-						 LEFT JOIN (
-						   SELECT product_refer, MIN(created_at) AS min_created_at
-						   FROM product_images
-						   GROUP BY product_refer
-						 ) pi_min ON p.id = pi_min.product_refer
-						 LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-						 WHERE p.deleted_at IS NULL and MATCH(p.name) AGAINST(? IN BOOLEAN MODE)`, requestSearch.Search+"*")
+		rows, err := database.MysqlInstance.Query(sqlQuery, args...)
 		if err != nil {
 			c.Status(500)
 			return
