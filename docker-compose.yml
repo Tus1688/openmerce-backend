@@ -28,6 +28,8 @@ services:
     image: ghcr.io/tus1688/go-nginx-fs:main
     container_name: nginx-fs
     restart: always
+    environment:
+      AUTHORIZATION: ${AUTHORIZATION}
     ports:
       - ${NGINX_FS_PORT}:5000
     volumes:

@@ -44,6 +44,7 @@ func loadEnv() {
 	auth.JwtKeyStaff = []byte(os.Getenv("JWT_KEY_STAFF"))
 	mailgun.ReadEnv()
 	staffControllers.NginxFSBaseUrl = os.Getenv("NGINX_FS_BASE_URL")
+	staffControllers.NginxFSAuthorization = os.Getenv("NGINX_FS_AUTHORIZATION")
 	log.Print("Loaded env!")
 }
 

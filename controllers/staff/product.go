@@ -115,7 +115,14 @@ func AddImage(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	res, err := http.Post(url, writer.FormDataContentType(), body)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", NginxFSAuthorization)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		c.Status(500)
 		return
@@ -192,6 +199,7 @@ func DeleteProduct(c *gin.Context) {
 			defer wg.Done()
 			url := NginxFSBaseUrl + "/handler?file=" + targetUrl + ".webp"
 			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			req.Header.Set("Authorization", NginxFSAuthorization)
 			if err != nil {
 				errChan <- err
 				return
