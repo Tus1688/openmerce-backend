@@ -68,7 +68,7 @@ CREATE TABLE products(
     name VARCHAR(85) UNIQUE NOT NULL,
     description VARCHAR(300) NOT NULL,
     price INT UNSIGNED NOT NULL,
-    weight SMALLINT UNSIGNED NOT NULL,
+    weight DECIMAL(10,2) NOT NULL,
     category_refer INT UNSIGNED NOT NULL,
     cumulative_review DECIMAL(2,1) DEFAULT 0,
     created_at datetime DEFAULT CURRENT_TIMESTAMP,

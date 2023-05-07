@@ -1,6 +1,7 @@
 package global
 
 import (
+	"database/sql"
 	"sync"
 
 	"github.com/Tus1688/openmerce-backend/database"
@@ -13,6 +14,38 @@ func GetProduct(c *gin.Context) {
 	var requestSearch models.APICommonQuerySearch
 
 	if err := c.ShouldBindQuery(&requestID); err == nil {
+		var response models.ProductDetail
+
+		err := database.MysqlInstance.QueryRow(`
+			SELECT BIN_TO_UUID(p.id), p.name, p.description, p.price, p.weight, c.name, p.cumulative_review FROM products p, categories c
+			WHERE p.category_refer = c.id AND p.deleted_at IS NULL AND p.id = UUID_TO_BIN(?)`, requestID.ID).
+			Scan(&response.ID, &response.Name, &response.Description, &response.Price, &response.Weight, &response.CategoryName, &response.CumulativeReview)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.Status(404)
+				return
+			}
+			// might be triggered too if the id is not a valid uuid
+			c.Status(500)
+			return
+		}
+		rows, err := database.MysqlInstance.Query(`
+		SELECT CONCAT(BIN_TO_UUID(id), '.webp') FROM product_images WHERE product_refer = UUID_TO_BIN(?)`, requestID.ID)
+		if err != nil {
+			c.Status(500)
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var image string
+			err := rows.Scan(&image)
+			if err != nil {
+				c.Status(500)
+				return
+			}
+			response.ImageUrls = append(response.ImageUrls, image)
+		}
+		c.JSON(200, response)
 		return
 	}
 
