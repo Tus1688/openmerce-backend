@@ -236,3 +236,55 @@ func DeleteProduct(c *gin.Context) {
 	}
 	c.Status(200)
 }
+
+func DeleteImage(c *gin.Context) {
+	var request models.ProductImageDelete
+	if err := c.ShouldBind(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	//	check if the product exists
+	var exist int8
+	// strips FileName replace ".webp" with "" to get the id
+	err := database.MysqlInstance.
+		QueryRow("SELECT 1 FROM product_images WHERE id = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)",
+			strings.Replace(request.FileName, ".webp", "", 1), request.ProductID).Scan(&exist)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.Status(404)
+			return
+		}
+		c.Status(500)
+		return
+	}
+	if exist != 1 {
+		c.Status(404)
+		return
+	}
+	url := NginxFSBaseUrl + "/handler?file=" + request.FileName
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req.Header.Set("Authorization", NginxFSAuthorization)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 && res.StatusCode != 404 {
+		// 404 considered as success as it maybe deleted by other request
+		c.Status(500)
+		return
+	}
+	//	delete the image from product_images
+	_, err = database.MysqlInstance.
+		Exec("DELETE FROM product_images WHERE id = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)", strings.Replace(request.FileName, ".webp", "", 1), request.ProductID)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	c.Status(200)
+}

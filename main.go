@@ -96,6 +96,7 @@ func initRouter() *gin.Engine {
 			inventory.POST("/product-1", staffControllers.AddNewProduct) // handle product meta creation
 			inventory.POST("/product-2", staffControllers.AddImage)      // handle image upload
 			inventory.DELETE("/product", staffControllers.DeleteProduct) // delete product and its images
+			inventory.DELETE("/product-2", staffControllers.DeleteImage) // delete image only
 		}
 	}
 	// global unprotected routes for public access

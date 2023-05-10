@@ -17,6 +17,11 @@ type ProductImage struct {
 	Picture   *multipart.FileHeader `form:"picture" binding:"required"`
 }
 
+type ProductImageDelete struct {
+	ProductID string `json:"product_id" binding:"required"`
+	FileName  string `json:"file_name" binding:"required"`
+}
+
 type CategoryCreate struct {
 	Name               string `json:"name" binding:"required"`
 	Description        string `json:"description" binding:"required"`
