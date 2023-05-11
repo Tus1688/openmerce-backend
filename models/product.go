@@ -1,6 +1,8 @@
 package models
 
-import "mime/multipart"
+import (
+	"mime/multipart"
+)
 
 // ProductCreate is the model for creating a new product on step 1
 type ProductCreate struct {
@@ -10,6 +12,18 @@ type ProductCreate struct {
 	Price        uint    `json:"price" binding:"required"`
 	Weight       float64 `json:"weight" binding:"required"`
 	InitialStock uint    `json:"initial_stock" binding:"required"`
+}
+
+// ProductUpdate is the model for updating a product (also considered as step 1)
+// there is no product update for step 2 (product images)
+type ProductUpdate struct {
+	ID          string  `json:"id" binding:"required"`
+	CategoryID  uint    `json:"category_id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       uint    `json:"price"`
+	Weight      float64 `json:"weight"`
+	Stock       uint    `json:"stock"`
 }
 
 type ProductImage struct {

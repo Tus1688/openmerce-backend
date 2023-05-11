@@ -288,3 +288,81 @@ func DeleteImage(c *gin.Context) {
 	}
 	c.Status(200)
 }
+
+func UpdateProduct(c *gin.Context) {
+	var request models.ProductUpdate
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	// somethingToUpdate is used to check if there is any field to update
+	// if there is no field to update, it will return 400
+	var somethingToUpdate bool
+	query := "UPDATE products p"
+	var args []interface{}
+	if request.Stock != 0 {
+		query += ", inventories i SET i.quantity = ?, i.updated_at = CURRENT_TIMESTAMP, "
+		args = append(args, request.Stock)
+		somethingToUpdate = true
+	} else {
+		query += " SET "
+	}
+	query += "p.updated_at = CURRENT_TIMESTAMP"
+	if request.Name != "" {
+		query += ", p.name = ?"
+		args = append(args, request.Name)
+		somethingToUpdate = true
+	}
+	if request.Description != "" {
+		query += ", p.description = ?"
+		args = append(args, request.Description)
+		somethingToUpdate = true
+	}
+	if request.Price != 0 {
+		query += ", p.price = ?"
+		args = append(args, request.Price)
+		somethingToUpdate = true
+	}
+	if request.CategoryID != 0 {
+		query += ", p.category_refer = ?"
+		args = append(args, request.CategoryID)
+		somethingToUpdate = true
+	}
+	if request.Weight != 0 {
+		query += ", p.weight = ? "
+		args = append(args, request.Weight)
+		somethingToUpdate = true
+	}
+	if request.Stock != 0 {
+		query += " WHERE i.product_refer = UUID_TO_BIN(?) AND "
+		args = append(args, request.ID)
+		somethingToUpdate = true
+	} else {
+		query += " WHERE "
+	}
+	if !somethingToUpdate {
+		c.Status(400)
+		return
+	}
+	query += "p.id = UUID_TO_BIN(?) AND p.deleted_at IS NULL"
+	args = append(args, request.ID)
+	res, err := database.MysqlInstance.Exec(query, args...)
+	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate") {
+			c.Status(409)
+			return
+		}
+		c.Status(500)
+		return
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	if affected == 0 {
+		c.Status(404)
+		return
+	}
+	c.Status(200)
+}
