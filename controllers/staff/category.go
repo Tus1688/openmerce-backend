@@ -1,6 +1,7 @@
 package staff
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/Tus1688/openmerce-backend/database"
@@ -57,12 +58,18 @@ func DeleteCategory(c *gin.Context) {
 		c.Status(400)
 		return
 	}
-	res, err := database.MysqlInstance.Exec("DELETE FROM categories WHERE id = ?", request.ID)
+	var exist int8
+	err := database.MysqlInstance.QueryRow("SELECT 1 FROM products WHERE category_refer = ? AND deleted_at IS NULL LIMIT 1", request.ID).Scan(&exist)
+	if err != nil && err != sql.ErrNoRows {
+		c.Status(500)
+		return
+	}
+	if exist == 1 {
+		c.JSON(409, gin.H{"error": "category is in use"})
+		return
+	}
+	res, err := database.MysqlInstance.Exec("UPDATE categories SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?", request.ID)
 	if err != nil {
-		if strings.Contains(err.Error(), "foreign key constraint fails") {
-			c.JSON(409, gin.H{"error": "Category is being used"})
-			return
-		}
 		c.Status(500)
 		return
 	}
@@ -98,7 +105,7 @@ func UpdateCategory(c *gin.Context) {
 		query += ", homepage_visibility = ?"
 		args = append(args, request.HomePageVisibility)
 	}
-	query += " WHERE id = ?"
+	query += " WHERE id = ? AND deleted_at IS NULL"
 	args = append(args, request.ID)
 	res, err := database.MysqlInstance.Exec(query, args...)
 	if err != nil {

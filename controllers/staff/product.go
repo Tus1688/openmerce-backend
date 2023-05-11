@@ -24,6 +24,24 @@ func AddNewProduct(c *gin.Context) {
 		c.Status(400)
 		return
 	}
+	wg := sync.WaitGroup{}
+	errChan := make(chan error, 1)
+	// check if the category exists
+	wg.Add(1)
+	go func(id uint) {
+		defer wg.Done()
+		var exist int8
+		err := database.MysqlInstance.QueryRow("SELECT 1 FROM categories WHERE id = ? AND deleted_at IS NULL", id).Scan(&exist)
+		if exist != 1 {
+			errChan <- errors.New("category not found")
+			return
+		}
+		// the sql.ErrNoRows won't ever be called as the category exist check is already done
+		if err != nil {
+			errChan <- err
+		}
+	}(request.CategoryID)
+
 	var id uuid.UUID
 	// check if soft-delete product with the same name exists
 	var existingProductID uuid.UUID
@@ -33,6 +51,20 @@ func AddNewProduct(c *gin.Context) {
 	if err != nil && err != sql.ErrNoRows {
 		c.Status(500)
 		return
+	}
+
+	// wait for the category check to finish
+	wg.Wait()
+	close(errChan)
+	for err := range errChan {
+		if err != nil {
+			if strings.Contains(err.Error(), "category") {
+				c.JSON(409, gin.H{"error": err.Error()})
+			} else {
+				c.Status(500)
+			}
+			return
+		}
 	}
 
 	if existingProductID != uuid.Nil {
@@ -308,7 +340,27 @@ func UpdateProduct(c *gin.Context) {
 		query += " SET "
 	}
 	query += "p.updated_at = CURRENT_TIMESTAMP"
+	wg := sync.WaitGroup{}
+	errChan := make(chan error, 2)
 	if request.Name != "" {
+		wg.Add(1)
+		// this goroutine is used to check if the product name is already exist
+		// in deleted product, if it existed, it will update the deleted product name
+		// into LEFT(name, 60) + "_deleted_" + current datetime (YYYY-MM-DD HH:MM)
+		go func(name string) {
+			defer wg.Done()
+			var deletedName string
+			_ = database.MysqlInstance.QueryRow("SELECT LEFT(name, 60) FROM products WHERE name = ? AND deleted_at IS NOT NULL", name).Scan(&deletedName)
+			if deletedName != "" {
+				//	update the deleted product name into deletedName + "_deleted" + current datetime (YYYY-MM-DD HH:MM)
+				_, err := database.MysqlInstance.
+					Exec("UPDATE products SET name = CONCAT(?, '_deleted_', DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i')) WHERE name = ? AND deleted_at IS NOT NULL", deletedName, name)
+				if err != nil {
+					errChan <- err
+					return
+				}
+			}
+		}(request.Name)
 		query += ", p.name = ?"
 		args = append(args, request.Name)
 		somethingToUpdate = true
@@ -324,6 +376,21 @@ func UpdateProduct(c *gin.Context) {
 		somethingToUpdate = true
 	}
 	if request.CategoryID != 0 {
+		wg.Add(1)
+		// this goroutine check if the category exist
+		go func(id uint) {
+			defer wg.Done()
+			var exist int8
+			err := database.MysqlInstance.QueryRow("SELECT 1 FROM categories WHERE id = ? AND deleted_at IS NULL", id).Scan(&exist)
+			if exist != 1 {
+				errChan <- errors.New("category not found")
+				return
+			}
+			// the sql.ErrNoRows won't ever be called as the category exist check is already done
+			if err != nil {
+				errChan <- err
+			}
+		}(request.CategoryID)
 		query += ", p.category_refer = ?"
 		args = append(args, request.CategoryID)
 		somethingToUpdate = true
@@ -346,10 +413,22 @@ func UpdateProduct(c *gin.Context) {
 	}
 	query += "p.id = UUID_TO_BIN(?) AND p.deleted_at IS NULL"
 	args = append(args, request.ID)
+	wg.Wait()
+	close(errChan)
+	for err := range errChan {
+		if err != nil {
+			if strings.Contains(err.Error(), "category") {
+				c.JSON(409, gin.H{"error": err.Error()})
+			} else {
+				c.Status(500)
+			}
+			return
+		}
+	}
 	res, err := database.MysqlInstance.Exec(query, args...)
 	if err != nil {
 		if strings.Contains(err.Error(), "Duplicate") {
-			c.Status(409)
+			c.JSON(409, gin.H{"error": "Product name already exist"})
 			return
 		}
 		c.Status(500)
@@ -361,6 +440,8 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 	if affected == 0 {
+		// if nothing updated and there is multiple update request at the same time, it will return 404 even though the
+		// product exist as there is nothing to update and CURRENT_TIMESTAMP increment by 1 second
 		c.Status(404)
 		return
 	}

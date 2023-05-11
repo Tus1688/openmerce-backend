@@ -60,7 +60,8 @@ CREATE TABLE categories(
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME,
     deleted_at DATETIME,
-    INDEX category_name_idx(name, deleted_at)
+    INDEX category_name_idx(name),
+    INDEX category_homepage_visibility_idx(homepage_visibility)
 );
 
 CREATE TABLE products(
