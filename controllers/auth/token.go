@@ -15,6 +15,7 @@ type redisValueCustomer struct {
 	UserAgent string `json:"user-agent"`
 	Id        string `json:"id"`
 	Jti       string `json:"jti"`
+	Remember  bool   `json:"remember_me"`
 }
 
 type redisValueStaff struct {
@@ -25,6 +26,7 @@ type redisValueStaff struct {
 	InvUser   bool   `json:"InvUser"`
 	SysAdmin  bool   `json:"SysAdmin"`
 	Jti       string `json:"jti"`
+	Remember  bool   `json:"remember_me"`
 }
 
 func RefreshTokenCustomer(c *gin.Context) {
@@ -77,8 +79,13 @@ func RefreshTokenCustomer(c *gin.Context) {
 	}
 	c.SetSameSite(http.SameSiteStrictMode)
 	// set the new access token and new refresh token to the cookie
-	c.SetCookie("ac_cus", newAccessToken, 60*3, "/", "", false, true)
-	c.SetCookie("ref_cus", newRefreshToken, int(ttl.Seconds()), "/", "", false, true)
+	if redisValue.Remember {
+		c.SetCookie("ac_cus", newAccessToken, 60*3, "/", "", false, true)
+		c.SetCookie("ref_cus", newRefreshToken, int(ttl.Seconds()), "/", "", false, true)
+	} else {
+		c.SetCookie("ac_cus", newAccessToken, 0, "/", "", false, true)
+		c.SetCookie("ref_cus", newRefreshToken, 0, "/", "", false, true)
+	}
 	c.Status(200)
 }
 
@@ -133,7 +140,12 @@ func RefreshTokenStaff(c *gin.Context) {
 	}
 	c.SetSameSite(http.SameSiteStrictMode)
 	// set the new access token and new refresh token to the cookie
-	c.SetCookie("ac_stf", newAccessToken, 60*3, "/", "", false, true)
-	c.SetCookie("ref_stf", newRefreshToken, int(ttl.Seconds()), "/", "", false, true)
+	if redisValue.Remember {
+		c.SetCookie("ac_stf", newAccessToken, 60*3, "/", "", false, true)
+		c.SetCookie("ref_stf", newRefreshToken, int(ttl.Seconds()), "/", "", false, true)
+	} else {
+		c.SetCookie("ac_stf", newAccessToken, 0, "/", "", false, true)
+		c.SetCookie("ref_stf", newRefreshToken, 0, "/", "", false, true)
+	}
 	c.Status(200)
 }

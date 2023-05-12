@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Tus1688/openmerce-backend/auth"
@@ -34,8 +33,13 @@ func LoginCustomer(c *gin.Context) {
 	userAgent := c.GetHeader("User-Agent")
 	jti := auth.GenerateRandomString(16)
 	refreshToken := auth.GenerateRandomString(32)
-	// make a json string that contains "user-agent": userAgent, "id": customer.ID, "jti": jti
-	jsonString := strings.Join([]string{"{\"user-agent\":\"", userAgent, "\",\"id\":\"", customer.ID.String(), "\",\"jti\":\"", jti, "\"}"}, "")
+	// make a json string that contains "user-agent": userAgent, "id": customer.ID, "jti": jti, "remember_me": request.RememberMe
+	var jsonString string
+	if request.RememberMe {
+		jsonString = `{"user-agent":"` + userAgent + `","id":"` + customer.ID.String() + `","jti":"` + jti + `","remember_me":` + "true" + `}`
+	} else {
+		jsonString = `{"user-agent":"` + userAgent + `","id":"` + customer.ID.String() + `","jti":"` + jti + `","remember_me":` + "false " + `}`
+	}
 	// insert into redis
 	err = database.RedisInstance[1].Set(context.Background(), refreshToken, jsonString, 14*24*time.Hour).Err()
 	if err != nil {
@@ -49,8 +53,13 @@ func LoginCustomer(c *gin.Context) {
 	}
 	c.SetSameSite(http.SameSiteStrictMode)
 	// 3 minutes expiration access token and 14 days expiration refresh token
-	c.SetCookie("ac_cus", token, 60*3, "/", "", false, true)
-	c.SetCookie("ref_cus", refreshToken, 60*60*24*14, "/", "", false, true)
+	if request.RememberMe {
+		c.SetCookie("ac_cus", token, 60*3, "/", "", false, true)
+		c.SetCookie("ref_cus", refreshToken, 60*60*24*14, "/", "", false, true)
+	} else {
+		c.SetCookie("ac_cus", token, 0, "/", "", false, true)
+		c.SetCookie("ref_cus", refreshToken, 0, "/", "", false, true)
+	}
 	c.JSON(200, gin.H{
 		"first_name": customer.FirstName,
 		"last_name":  customer.LastName,
@@ -78,11 +87,17 @@ func LoginStaff(c *gin.Context) {
 	userAgent := c.GetHeader("User-Agent")
 	jti := auth.GenerateRandomString(16)
 	refreshToken := auth.GenerateRandomString(32)
-	// make a json string that contains "user-agent": userAgent, "id": staff.ID, "username": staff.Username, "FinUser": staff.FinUser, "InvUser": staff.InvUser, "SysAdmin": staff.SysAdmin, "jti": jti
-	jsonString := strings.Join([]string{"{\"user-agent\":\"", userAgent, "\",\"id\":",
-		strconv.FormatUint(uint64(staff.ID), 10), ",\"username\":\"", staff.Username, "\",\"FinUser\":",
-		strconv.FormatBool(staff.FinUser), ",\"InvUser\":", strconv.FormatBool(staff.InvUser), ",\"SysAdmin\":",
-		strconv.FormatBool(staff.SysAdmin), ",\"jti\":\"", jti, "\"}"}, "")
+	// make a json string that contains "user-agent": userAgent, "id": staff.ID, "username": staff.Username, "FinUser": staff.FinUser, "InvUser": staff.InvUser, "SysAdmin": staff.SysAdmin, "jti": jti, "remember_me": request.RememberMe
+	var jsonString string
+	if request.RememberMe {
+		jsonString = `{"user-agent":"` + userAgent + `","id":` + strconv.FormatUint(uint64(staff.ID), 10) +
+			`,"username":"` + staff.Username + `","FinUser":` + strconv.FormatBool(staff.FinUser) + `,"InvUser":` +
+			strconv.FormatBool(staff.InvUser) + `,"SysAdmin":` + strconv.FormatBool(staff.SysAdmin) + `,"jti":"` + jti + `","remember_me":` + "true" + `}`
+	} else {
+		jsonString = `{"user-agent":"` + userAgent + `","id":` + strconv.FormatUint(uint64(staff.ID), 10) +
+			`,"username":"` + staff.Username + `","FinUser":` + strconv.FormatBool(staff.FinUser) + `,"InvUser":` +
+			strconv.FormatBool(staff.InvUser) + `,"SysAdmin":` + strconv.FormatBool(staff.SysAdmin) + `,"jti":"` + jti + `","remember_me":` + "false " + `}`
+	}
 	err = database.RedisInstance[2].Set(context.Background(), refreshToken, jsonString, 14*24*time.Hour).Err()
 	if err != nil {
 		c.Status(500)
@@ -95,8 +110,13 @@ func LoginStaff(c *gin.Context) {
 	}
 	c.SetSameSite(http.SameSiteStrictMode)
 	// 3 minutes expiration access token and 14 days expiration refresh token
-	c.SetCookie("ac_stf", token, 60*3, "/", "", false, true)
-	c.SetCookie("ref_stf", refreshToken, 60*60*24*14, "/", "", false, true)
+	if request.RememberMe {
+		c.SetCookie("ac_stf", token, 60*3, "/", "", false, true)
+		c.SetCookie("ref_stf", refreshToken, 60*60*24*14, "/", "", false, true)
+	} else {
+		c.SetCookie("ac_stf", token, 0, "/", "", false, true)
+		c.SetCookie("ref_stf", refreshToken, 0, "/", "", false, true)
+	}
 	c.JSON(200, gin.H{
 		"username":  staff.Username,
 		"fin_user":  staff.FinUser,
