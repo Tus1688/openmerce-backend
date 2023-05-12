@@ -5,7 +5,7 @@ type APICommonQueryID struct {
 }
 
 type APICommonQueryUUID struct {
-	ID string `form:"id" binding:"required"`
+	ID string `form:"id" binding:"required,uuid"`
 }
 
 type APICommonQuerySearch struct {

@@ -17,7 +17,7 @@ type ProductCreate struct {
 // ProductUpdate is the model for updating a product (also considered as step 1)
 // there is no product update for step 2 (product images)
 type ProductUpdate struct {
-	ID          string  `json:"id" binding:"required"`
+	ID          string  `json:"id" binding:"required,uuid"`
 	CategoryID  uint    `json:"category_id"`
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
@@ -27,12 +27,12 @@ type ProductUpdate struct {
 }
 
 type ProductImage struct {
-	ProductID string                `form:"product_id" binding:"required"`
+	ProductID string                `form:"product_id" binding:"required,uuid"`
 	Picture   *multipart.FileHeader `form:"picture" binding:"required"`
 }
 
 type ProductImageDelete struct {
-	ProductID string `json:"product_id" binding:"required"`
+	ProductID string `json:"product_id" binding:"required,uuid"`
 	FileName  string `json:"file_name" binding:"required"`
 }
 

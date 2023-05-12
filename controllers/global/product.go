@@ -103,6 +103,11 @@ func GetProduct(c *gin.Context) {
 		c.JSON(200, response)
 		return
 	}
+	// check if there is no query for id because it binds to uuid and will return 400 if the id is not a valid uuid
+	if requestID.ID != "" {
+		c.Status(400)
+		return
+	}
 	// return everything if no query is provided
 	var response []models.HomepageProductResponse
 
