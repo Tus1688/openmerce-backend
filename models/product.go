@@ -49,6 +49,11 @@ type CategoryResponse struct {
 	HomePageVisibility bool   `json:"homepage_visibility"`
 }
 
+type CategoryResponseCompact struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
 type CategoryUpdate struct {
 	ID                 uint   `json:"id" binding:"required"`
 	Name               string `json:"name"`
