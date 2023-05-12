@@ -70,7 +70,8 @@ func AddNewProduct(c *gin.Context) {
 	if existingProductID != uuid.Nil {
 		//	update the deleted_at to NULL
 		_, err = database.MysqlInstance.
-			Exec("UPDATE products SET deleted_at = NULL, created_at = CURRENT_TIMESTAMP, updated_at = NULL  WHERE id = UUID_TO_BIN(?)", existingProductID)
+			Exec("UPDATE products SET deleted_at = NULL, created_at = CURRENT_TIMESTAMP, updated_at = NULL, description = ?, price = ?, weight = ?, category_refer = ?, cumulative_review = 0  WHERE id = UUID_TO_BIN(?)",
+				request.Description, request.Price, request.Weight, request.CategoryID, existingProductID)
 		if err != nil {
 			c.Status(500)
 			return
@@ -266,6 +267,7 @@ func DeleteProduct(c *gin.Context) {
 			return
 		}
 	}
+	//TODO: delete product reviews
 	c.Status(200)
 }
 

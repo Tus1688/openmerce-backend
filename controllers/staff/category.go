@@ -11,7 +11,7 @@ import (
 
 func GetCategories(c *gin.Context) {
 	var categories []models.CategoryResponse
-	rows, err := database.MysqlInstance.Query("SELECT id, name, description, homepage_visibility FROM categories")
+	rows, err := database.MysqlInstance.Query("SELECT id, name, description, homepage_visibility FROM categories WHERE deleted_at IS NULL")
 	if err != nil {
 		c.Status(500)
 		return
@@ -34,6 +34,27 @@ func AddNewCategory(c *gin.Context) {
 		c.Status(400)
 		return
 	}
+	var existingCategoryId uint
+	err := database.MysqlInstance.
+		QueryRow("SELECT id FROM categories WHERE name = ? AND deleted_at IS NOT NULL", request.Name).
+		Scan(&existingCategoryId)
+	if err != nil && err != sql.ErrNoRows {
+		c.Status(500)
+		return
+	}
+
+	if existingCategoryId != 0 {
+		//	update the deleted_at to null
+		_, err := database.MysqlInstance.Exec("UPDATE categories SET deleted_at = NULL, updated_at = NULL, description = ?, homepage_visibility = ? WHERE id = ?",
+			request.Description, request.HomePageVisibility, existingCategoryId)
+		if err != nil {
+			c.Status(500)
+			return
+		}
+		c.JSON(201, gin.H{"id": existingCategoryId})
+		return
+	}
+	// if there is no existing category with the same name, create a new one
 	res, err := database.MysqlInstance.Exec("INSERT INTO categories (name, description, homepage_visibility) VALUES (?, ?, ?)",
 		request.Name, request.Description, request.HomePageVisibility)
 	if err != nil {
@@ -68,7 +89,7 @@ func DeleteCategory(c *gin.Context) {
 		c.JSON(409, gin.H{"error": "category is in use"})
 		return
 	}
-	res, err := database.MysqlInstance.Exec("UPDATE categories SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?", request.ID)
+	res, err := database.MysqlInstance.Exec("UPDATE categories SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL", request.ID)
 	if err != nil {
 		c.Status(500)
 		return
