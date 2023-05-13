@@ -225,7 +225,7 @@ func DeleteProduct(c *gin.Context) {
 
 	//	delete the images from NginxFS
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(imageUrls))
+	errChan := make(chan error)
 	for _, imageUrl := range imageUrls {
 		wg.Add(1)
 		go func(targetUrl string) {
@@ -256,10 +256,21 @@ func DeleteProduct(c *gin.Context) {
 			}
 		}(imageUrl)
 	}
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
+	// Delete the product from cart_items
+	wg.Add(1)
+	go func(ProductId string) {
+		defer wg.Done()
+		_, err := database.MysqlInstance.Exec("DELETE FROM cart_items WHERE product_refer = UUID_TO_BIN(?)", ProductId)
+		if err != nil {
+			errChan <- err
+			return
+		}
+	}(request.ID)
+
+	//TODO: delete product reviews
+
+	wg.Wait()
+	close(errChan)
 
 	for err := range errChan {
 		if err != nil {
@@ -267,7 +278,6 @@ func DeleteProduct(c *gin.Context) {
 			return
 		}
 	}
-	//TODO: delete product reviews
 	c.Status(200)
 }
 

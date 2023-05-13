@@ -28,7 +28,7 @@ CREATE TABLE auth_logs(
 CREATE TABLE areas (
     code varchar(13) PRIMARY KEY,
     name varchar(100),
-    INDEX areas_name_idx(name)
+    FULLTEXT INDEX areas_name_idx(name)
 );
 
 CREATE TABLE customer_addresses(
@@ -105,6 +105,7 @@ CREATE TABLE cart_items(
     customer_refer BINARY(16) NOT NULL,
     quantity SMALLINT UNSIGNED NOT NULL,
     INDEX cart_items_customer_idx(customer_refer),
+    UNIQUE(product_refer, customer_refer),
     FOREIGN KEY (product_refer) REFERENCES products(id),
     FOREIGN KEY (customer_refer) REFERENCES customers(id)
 );

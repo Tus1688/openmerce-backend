@@ -26,3 +26,24 @@ func TokenExpiredStaff(expiredIn int) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func TokenExpiredCustomer(expiredIn int) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString, err := c.Cookie("ac_cus")
+		if err != nil {
+			c.AbortWithStatus(401)
+			return
+		}
+		claims, err := auth.ExtractClaimAccessTokenCustomer(tokenString)
+		if err != nil {
+			c.AbortWithStatus(401)
+			return
+		}
+		// verify the struct of token as email verification token has same secret key
+		if claims.IssuedAt.Time.Add(time.Duration(expiredIn)*time.Minute).Before(time.Now()) || claims.Uid == "" {
+			c.AbortWithStatus(401)
+			return
+		}
+		c.Next()
+	}
+}

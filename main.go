@@ -5,6 +5,7 @@ import (
 	"os"
 
 	authControllers "github.com/Tus1688/openmerce-backend/controllers/auth"
+	customerControllers "github.com/Tus1688/openmerce-backend/controllers/customer"
 	globalControllers "github.com/Tus1688/openmerce-backend/controllers/global"
 	staffControllers "github.com/Tus1688/openmerce-backend/controllers/staff"
 	"github.com/Tus1688/openmerce-backend/middlewares"
@@ -100,6 +101,15 @@ func initRouter() *gin.Engine {
 			inventory.PATCH("/product-1", staffControllers.UpdateProduct) // update product (without image)
 		}
 	}
+
+	// customer dashboard is protected by token expired middleware with 3 minutes (default)
+	// every customer can access the dashboard
+	customerDashboard := router.Group("/api/v1/customer")
+	customerDashboard.Use(middlewares.TokenExpiredCustomer(3))
+	{
+		customerDashboard.GET("/cart", customerControllers.GetCart)
+	}
+
 	// global unprotected routes for public access
 	router.GET("/api/v1/product", globalControllers.GetProduct)
 	router.GET("/api/v1/category", globalControllers.GetCategory)
