@@ -108,6 +108,7 @@ func initRouter() *gin.Engine {
 	customerDashboard.Use(middlewares.TokenExpiredCustomer(3))
 	{
 		customerDashboard.GET("/cart", customerControllers.GetCart)
+		customerDashboard.POST("/cart", customerControllers.AddToCart)
 	}
 
 	// global unprotected routes for public access
