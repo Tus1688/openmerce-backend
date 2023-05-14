@@ -61,12 +61,14 @@ func initRouter() *gin.Engine {
 		customerAuth.POST("/register-3", authControllers.CreateAccount)        // user input everything else to create an account
 		customerAuth.POST("/login", authControllers.LoginCustomer)             // user login with email and password
 		customerAuth.GET("/refresh", authControllers.RefreshTokenCustomer)     // user refresh the token
+		customerAuth.POST("/logout", authControllers.LogoutCustomer)           // user logout
 	}
 
 	staffAuth := router.Group("/api/v1/staff/auth")
 	{
 		staffAuth.POST("/login", authControllers.LoginStaff)
 		staffAuth.GET("/refresh", authControllers.RefreshTokenStaff)
+		staffAuth.POST("/logout", authControllers.LogoutStaff)
 	}
 
 	// handle internal staff issue which won't be exposed to the public

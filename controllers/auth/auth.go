@@ -124,3 +124,31 @@ func LoginStaff(c *gin.Context) {
 		"sys_admin": staff.SysAdmin,
 	})
 }
+
+func LogoutCustomer(c *gin.Context) {
+	// delete redis
+	refreshToken, err := c.Cookie("ref_cus")
+	if err != nil {
+		c.Status(400)
+		return
+	}
+	// we don't handle error here because if the refresh token is not found in redis, it means that the user has already logged out
+	_ = database.RedisInstance[1].Del(context.Background(), refreshToken).Err()
+	c.SetCookie("ac_cus", "", -1, "/", "", false, true)
+	c.SetCookie("ref_cus", "", -1, "/", "", false, true)
+	c.Status(200)
+}
+
+func LogoutStaff(c *gin.Context) {
+	// delete redis
+	refreshToken, err := c.Cookie("ref_stf")
+	if err != nil {
+		c.Status(400)
+		return
+	}
+	// we don't handle error here because if the refresh token is not found in redis, it means that the user has already logged out
+	_ = database.RedisInstance[2].Del(context.Background(), refreshToken).Err()
+	c.SetCookie("ac_stf", "", -1, "/", "", false, true)
+	c.SetCookie("ref_stf", "", -1, "/", "", false, true)
+	c.Status(200)
+}
