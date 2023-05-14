@@ -118,3 +118,32 @@ func AddToCart(c *gin.Context) {
 	}
 	c.Status(200)
 }
+
+func DeleteCart(c *gin.Context) {
+	var request models.APICommonQueryUUID
+	if err := c.ShouldBindQuery(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
+	token, _ := c.Cookie("ac_cus")
+	claims, err := auth.ExtractClaimAccessTokenCustomer(token)
+	if err != nil {
+		c.Status(401)
+		return
+	}
+	customerId := claims.Uid
+
+	res, err := database.MysqlInstance.Exec(`
+		DELETE FROM cart_items WHERE customer_refer = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)
+	`, customerId, request.ID)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	if affected, _ := res.RowsAffected(); affected == 0 {
+		c.Status(404)
+		return
+	}
+	c.Status(200)
+}

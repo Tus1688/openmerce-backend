@@ -108,7 +108,8 @@ func initRouter() *gin.Engine {
 	customerDashboard.Use(middlewares.TokenExpiredCustomer(3))
 	{
 		customerDashboard.GET("/cart", customerControllers.GetCart)
-		customerDashboard.POST("/cart", customerControllers.AddToCart)
+		customerDashboard.POST("/cart", customerControllers.AddToCart)    // also handle update cart
+		customerDashboard.DELETE("/cart", customerControllers.DeleteCart) // delete cart item based on product id
 	}
 
 	// global unprotected routes for public access
