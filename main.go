@@ -101,6 +101,12 @@ func initRouter() *gin.Engine {
 			inventory.DELETE("/product-2", staffControllers.DeleteImage)  // delete image only
 			inventory.PATCH("/product-1", staffControllers.UpdateProduct) // update product (without image)
 		}
+		// everything that related to global wide system settings
+		system := staffDashboard.Group("/system")
+		system.Use(middlewares.TokenIsSysAdmin())
+		{
+			system.POST("/home-banner", staffControllers.AddHomeBanner)
+		}
 	}
 
 	// customer dashboard is protected by token expired middleware with 3 minutes (default)

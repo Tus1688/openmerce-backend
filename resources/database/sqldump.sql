@@ -212,6 +212,14 @@ CREATE TABLE staffs(
     updated_at DATETIME
 );
 
+CREATE TABLE homepage_banner(
+    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    file_name varchar(41) NOT NULL,
+    href varchar(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME
+);
+
 CREATE TABLE blacklist_domains (
     domain_name VARCHAR(255) UNIQUE
 )
