@@ -24,10 +24,17 @@ func GetCart(c *gin.Context) {
 	customerId := claims.Uid
 	var response []models.CartItemResponse
 	rows, err := database.MysqlInstance.
-		Query(`SELECT BIN_TO_UUID(p.id), p.name, p.price, c.quantity, i.quantity
-			FROM cart_items c, products p, inventories i WHERE c.customer_refer = UUID_TO_BIN(?) 
-		    AND c.product_refer = p.id AND p.id = i.product_refer`,
-			customerId)
+		Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, c.quantity, i.quantity
+			FROM cart_items c
+			JOIN products p ON c.product_refer = p.id
+			JOIN inventories i ON p.id = i.product_refer
+			LEFT JOIN (SELECT product_refer, MIN(created_at) AS min_created_at
+			FROM product_images
+			GROUP BY product_refer) pi_min ON p.id = pi_min.product_refer
+			LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
+			WHERE c.customer_refer = UUID_TO_BIN(?)
+			AND p.deleted_at IS NULL;
+			`, customerId)
 	if err != nil {
 		c.Status(500)
 		return
@@ -35,7 +42,7 @@ func GetCart(c *gin.Context) {
 	defer rows.Close()
 	for rows.Next() {
 		var item models.CartItemResponse
-		err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.Quantity, &item.CurrentStock)
+		err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity, &item.CurrentStock)
 		if err != nil {
 			c.Status(500)
 			return
