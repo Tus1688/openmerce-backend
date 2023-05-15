@@ -8,6 +8,7 @@ type InsertBanner struct {
 }
 
 type GetBanner struct {
+	Id       uint   `json:"id"`
 	ImageUrl string `json:"image_url"`
 	Href     string `json:"href"`
 }
