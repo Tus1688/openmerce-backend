@@ -4,14 +4,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/Tus1688/openmerce-backend/auth"
 	authControllers "github.com/Tus1688/openmerce-backend/controllers/auth"
 	customerControllers "github.com/Tus1688/openmerce-backend/controllers/customer"
 	globalControllers "github.com/Tus1688/openmerce-backend/controllers/global"
 	staffControllers "github.com/Tus1688/openmerce-backend/controllers/staff"
-	"github.com/Tus1688/openmerce-backend/middlewares"
-
-	"github.com/Tus1688/openmerce-backend/auth"
 	"github.com/Tus1688/openmerce-backend/database"
+	"github.com/Tus1688/openmerce-backend/middlewares"
 	"github.com/Tus1688/openmerce-backend/service/mailgun"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
