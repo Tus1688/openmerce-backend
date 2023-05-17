@@ -104,6 +104,7 @@ CREATE TABLE cart_items(
     product_refer BINARY(16) NOT NULL,
     customer_refer BINARY(16) NOT NULL,
     quantity SMALLINT UNSIGNED NOT NULL,
+    checked BOOLEAN DEFAULT FALSE,
     INDEX cart_items_customer_idx(customer_refer),
     UNIQUE(product_refer, customer_refer),
     FOREIGN KEY (product_refer) REFERENCES products(id),

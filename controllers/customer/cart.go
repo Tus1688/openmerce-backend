@@ -43,6 +43,41 @@ func GetCartCount(c *gin.Context) {
 	c.JSON(200, gin.H{"count": count})
 }
 
+func CheckCartItem(c *gin.Context) {
+	var request models.CartCheck
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
+	token, _ := c.Cookie("ac_cus")
+	claims, err := auth.ExtractClaimAccessTokenCustomer(token)
+	if err != nil {
+		c.Status(401)
+		return
+	}
+	customerId := claims.Uid
+	res, err := database.MysqlInstance.
+		Exec("UPDATE cart_items SET checked = ? WHERE customer_refer = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)",
+			request.State, customerId, request.ProductID)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	if affected == 0 {
+		// product not found in cart or there is no change in the state
+		c.Status(404)
+		return
+	}
+	// we don't need to update the redis cache as it doesn't affect the cart count
+	c.Status(200)
+}
+
 func GetCart(c *gin.Context) {
 	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
 	token, _ := c.Cookie("ac_cus")
@@ -55,7 +90,7 @@ func GetCart(c *gin.Context) {
 	customerId := claims.Uid
 	var response []models.CartItemResponse
 	rows, err := database.MysqlInstance.
-		Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, c.quantity, i.quantity
+		Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, c.quantity, i.quantity, c.checked
 			FROM cart_items c
 			JOIN products p ON c.product_refer = p.id
 			JOIN inventories i ON p.id = i.product_refer
@@ -73,7 +108,7 @@ func GetCart(c *gin.Context) {
 	defer rows.Close()
 	for rows.Next() {
 		var item models.CartItemResponse
-		err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity, &item.CurrentStock)
+		err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity, &item.CurrentStock, &item.Checked)
 		if err != nil {
 			c.Status(500)
 			return
