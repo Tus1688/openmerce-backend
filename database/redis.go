@@ -11,13 +11,14 @@ import (
 0 for awaiting email verification (email, verification code) (ttl: 15 minutes)
 1 for refresh token customer key: refresh_token  value: JSON of user-agent and id (ttl: 14 day??)
 2 for refresh token staff key: refresh_token  value: JSON of user-agent, id, username, fin_user, inv_user, sys_admin (ttl: 14 day??)
+3 for customer_cart counts (ttl: 14 day) key: customer_id value: counts
 */
 var RedisInstance []*redis.Client
 var ctx = context.Background()
 
 func NewRedis() error {
 	// loop until 5 times
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
 		// create new redis client
 		addr := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
 		client := redis.NewClient(&redis.Options{

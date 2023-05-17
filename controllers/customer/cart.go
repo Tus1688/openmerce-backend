@@ -1,16 +1,47 @@
 package customer
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Tus1688/openmerce-backend/auth"
 	"github.com/Tus1688/openmerce-backend/database"
 	"github.com/Tus1688/openmerce-backend/models"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
+
+func GetCartCount(c *gin.Context) {
+	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
+	token, _ := c.Cookie("ac_cus")
+	claims, err := auth.ExtractClaimAccessTokenCustomer(token)
+	if err != nil {
+		c.Status(401)
+		return
+	}
+	//	check from redis[3] if the cart count is cached
+	customerId := claims.Uid
+	var count uint8
+	err = database.RedisInstance[3].Get(context.Background(), customerId).Scan(&count)
+	//	if there is no cache, get the count from database
+	if err == redis.Nil {
+		err := database.MysqlInstance.QueryRow("SELECT COUNT(customer_refer) FROM cart_items WHERE customer_refer = UUID_TO_BIN(?)", customerId).Scan(&count)
+		if err != nil {
+			// there won't be sql.ErrNoRows as it will return 0
+			c.Status(500)
+			return
+		}
+		// update the redis cache
+		go func(curValue uint8, userID string) {
+			_ = database.RedisInstance[3].Set(context.Background(), userID, curValue, 24*14*time.Hour).Err()
+		}(count, customerId)
+	}
+	c.JSON(200, gin.H{"count": count})
+}
 
 func GetCart(c *gin.Context) {
 	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
@@ -123,6 +154,7 @@ func AddToCart(c *gin.Context) {
 		c.Status(500)
 		return
 	}
+	go updateCartCache(customerId)
 	c.Status(200)
 }
 
@@ -152,5 +184,16 @@ func DeleteCart(c *gin.Context) {
 		c.Status(404)
 		return
 	}
+	go updateCartCache(customerId)
 	c.Status(200)
+}
+
+func updateCartCache(customerID string) {
+	var count uint16
+	err := database.MysqlInstance.
+		QueryRow("SELECT COUNT(customer_refer) FROM cart_items WHERE customer_refer = UUID_TO_BIN(?)", customerID).
+		Scan(&count)
+	if err == nil {
+		_ = database.RedisInstance[3].Set(context.Background(), customerID, count, 24*14*time.Hour).Err()
+	}
 }
