@@ -119,6 +119,10 @@ func initRouter() *gin.Engine {
 		customerDashboard.DELETE("/cart", customerControllers.DeleteCart)          // delete cart item based on product id
 		customerDashboard.POST("/cart-checked", customerControllers.CheckCartItem) // handle ticked cart item to be checked out
 		customerDashboard.GET("/cart-count", customerControllers.GetCartCount)     // get cart count (for cart badge)
+
+		customerDashboard.GET("/wishlist", customerControllers.GetWishlist)
+		customerDashboard.POST("/wishlist", customerControllers.AddToWishlist)    // does not handle update wishlist
+		customerDashboard.DELETE("/wishlist", customerControllers.DeleteWishlist) // delete wishlist item based on product id
 	}
 
 	// global unprotected routes for public access

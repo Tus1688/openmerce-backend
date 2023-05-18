@@ -267,6 +267,16 @@ func DeleteProduct(c *gin.Context) {
 		}
 	}(request.ID)
 
+	// Delete the product from wishlists
+	wg.Add(1)
+	go func(ProductId string) {
+		defer wg.Done()
+		_, err := database.MysqlInstance.Exec("DELETE FROM wishlists WHERE product_refer = UUID_TO_BIN(?)", ProductId)
+		if err != nil {
+			errChan <- err
+			return
+		}
+	}(request.ID)
 	//TODO: delete product reviews
 
 	wg.Wait()

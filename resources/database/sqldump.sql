@@ -116,6 +116,7 @@ CREATE TABLE wishlists(
     product_refer BINARY(16) NOT NULL,
     customer_refer BINARY(16) NOT NULL,
     INDEX wishlists_customer_idx(customer_refer),
+    UNIQUE(product_refer, customer_refer),
     FOREIGN KEY (product_refer) REFERENCES products(id),
     FOREIGN KEY (customer_refer) REFERENCES customers(id)
 );
