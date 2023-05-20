@@ -27,8 +27,9 @@ CREATE TABLE auth_logs(
 
 CREATE TABLE areas (
     code varchar(13) PRIMARY KEY,
-    name varchar(100),
-    FULLTEXT INDEX areas_name_idx(name)
+    name varchar(100) NOT NULL ,
+    FULLTEXT INDEX areas_name_idx(name),
+    INDEX areas_code_idx(code)
 );
 
 CREATE TABLE customer_addresses(
