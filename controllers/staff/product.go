@@ -70,8 +70,8 @@ func AddNewProduct(c *gin.Context) {
 	if existingProductID != uuid.Nil {
 		//	update the deleted_at to NULL
 		_, err = database.MysqlInstance.
-			Exec("UPDATE products SET deleted_at = NULL, created_at = CURRENT_TIMESTAMP, updated_at = NULL, description = ?, price = ?, weight = ?, category_refer = ?, cumulative_review = 0  WHERE id = UUID_TO_BIN(?)",
-				request.Description, request.Price, request.Weight, request.CategoryID, existingProductID)
+			Exec("UPDATE products SET deleted_at = NULL, created_at = CURRENT_TIMESTAMP, updated_at = NULL, description = ?, price = ?, weight = ?, category_refer = ?, cumulative_review = 0, length = ?, width = ?, height = ?  WHERE id = UUID_TO_BIN(?)",
+				request.Description, request.Price, request.Weight, request.CategoryID, request.Length, request.Width, request.Height, existingProductID)
 		if err != nil {
 			c.Status(500)
 			return
@@ -81,8 +81,8 @@ func AddNewProduct(c *gin.Context) {
 		id = uuid.New()
 		// insert the new product
 		_, err = database.MysqlInstance.
-			Exec("INSERT INTO products (id, name, description, price, weight, category_refer) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?)",
-				id, request.Name, request.Description, request.Price, request.Weight, request.CategoryID)
+			Exec("INSERT INTO products (id, name, description, price, weight, category_refer, length, width, height) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?, ?)",
+				id, request.Name, request.Description, request.Price, request.Weight, request.CategoryID, request.Length, request.Width, request.Height)
 		if err != nil {
 			//	check if the product name already exists
 			if strings.Contains(err.Error(), "Duplicate entry") {
@@ -420,6 +420,21 @@ func UpdateProduct(c *gin.Context) {
 	if request.Weight != 0 {
 		query += ", p.weight = ? "
 		args = append(args, request.Weight)
+		somethingToUpdate = true
+	}
+	if request.Length != 0 {
+		query += ", p.length = ? "
+		args = append(args, request.Length)
+		somethingToUpdate = true
+	}
+	if request.Width != 0 {
+		query += ", p.width = ? "
+		args = append(args, request.Width)
+		somethingToUpdate = true
+	}
+	if request.Height != 0 {
+		query += ", p.height = ? "
+		args = append(args, request.Height)
 		somethingToUpdate = true
 	}
 	if request.Stock != 0 {

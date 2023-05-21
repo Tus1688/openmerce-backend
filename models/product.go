@@ -12,6 +12,9 @@ type ProductCreate struct {
 	Price        uint    `json:"price" binding:"required"`
 	Weight       float64 `json:"weight" binding:"required"`
 	InitialStock uint    `json:"initial_stock" binding:"required"`
+	Length       uint16  `json:"length" binding:"required"`
+	Width        uint16  `json:"width" binding:"required"`
+	Height       uint16  `json:"height" binding:"required"`
 }
 
 // ProductUpdate is the model for updating a product (also considered as step 1)
@@ -24,6 +27,9 @@ type ProductUpdate struct {
 	Price       uint    `json:"price"`
 	Weight      float64 `json:"weight"`
 	Stock       uint    `json:"stock"`
+	Length      uint16  `json:"length"`
+	Width       uint16  `json:"width"`
+	Height      uint16  `json:"height"`
 }
 
 type ProductImage struct {
@@ -88,4 +94,5 @@ type ProductDetail struct {
 	CategoryName     string   `json:"category_name"`
 	CumulativeReview float64  `json:"cumulative_review"`
 	ImageUrls        []string `json:"image_urls"`
+	Dimension        string   `json:"dimension"`
 }
