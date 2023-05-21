@@ -123,6 +123,11 @@ func initRouter() *gin.Engine {
 		customerDashboard.GET("/wishlist", customerControllers.GetWishlist)
 		customerDashboard.POST("/wishlist", customerControllers.AddToWishlist)    // does not handle update wishlist
 		customerDashboard.DELETE("/wishlist", customerControllers.DeleteWishlist) // delete wishlist item based on product id
+
+		customerDashboard.GET("/address", customerControllers.GetAddress)       // get all address
+		customerDashboard.POST("/address", customerControllers.AddAddress)      // handle add new address
+		customerDashboard.DELETE("/address", customerControllers.DeleteAddress) // handle delete address
+		customerDashboard.PATCH("/address", customerControllers.UpdateAddress)  // handle update address
 	}
 
 	// global unprotected routes for public access

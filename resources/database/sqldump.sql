@@ -40,17 +40,15 @@ CREATE TABLE customer_addresses(
     note VARCHAR(45),
     recipient_name VARCHAR(50) NOT NULL,
     phone_number VARCHAR(15) NOT NULL,
-    subdistrict varchar(13) NOT NULL,
-    district varchar(13) NOT NULL,
-    city varchar(13) NOT NULL,
-    province varchar(13) NOT NULL,
+    shipping_area_refer MEDIUMINT UNSIGNED NOT NULL,
     postal_code varchar(5) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    -- hard delete for now
     INDEX customer_refer_idx(customer_refer),
+    UNIQUE (customer_refer, label),
     FOREIGN KEY (customer_refer) REFERENCES customers(id),
-    FOREIGN KEY (subdistrict) REFERENCES areas(code),
-    FOREIGN KEY (district) REFERENCES areas(code),
-    FOREIGN KEY (city) REFERENCES areas(code),
-    FOREIGN KEY (province) REFERENCES areas(code)
+    FOREIGN KEY (shipping_area_refer) REFERENCES shipping_areas(id)
 );
 
 CREATE TABLE categories(
