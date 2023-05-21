@@ -17,9 +17,9 @@ func GetProduct(c *gin.Context) {
 		var response models.ProductDetail
 
 		err := database.MysqlInstance.QueryRow(`
-			SELECT BIN_TO_UUID(p.id), p.name, p.description, p.price, p.weight, c.name, p.cumulative_review, CONCAT(p.length, ' x ', p.width, ' x ', p.height) FROM products p, categories c
-			WHERE p.category_refer = c.id AND p.deleted_at IS NULL AND p.id = UUID_TO_BIN(?)`, requestID.ID).
-			Scan(&response.ID, &response.Name, &response.Description, &response.Price, &response.Weight, &response.CategoryName, &response.CumulativeReview, &response.Dimension)
+			SELECT BIN_TO_UUID(p.id), p.name, p.description, p.price, p.weight, c.name, p.cumulative_review, CONCAT(p.length, ' x ', p.width, ' x ', p.height), i.quantity FROM products p, categories c, inventories i
+			WHERE p.category_refer = c.id AND p.deleted_at IS NULL AND p.id = UUID_TO_BIN(?) AND p.id = i.product_refer`, requestID.ID).
+			Scan(&response.ID, &response.Name, &response.Description, &response.Price, &response.Weight, &response.CategoryName, &response.CumulativeReview, &response.Dimension, &response.Stock)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.Status(404)
