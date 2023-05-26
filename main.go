@@ -11,6 +11,7 @@ import (
 	staffControllers "github.com/Tus1688/openmerce-backend/controllers/staff"
 	"github.com/Tus1688/openmerce-backend/database"
 	"github.com/Tus1688/openmerce-backend/middlewares"
+	"github.com/Tus1688/openmerce-backend/service/freight"
 	"github.com/Tus1688/openmerce-backend/service/mailgun"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -45,6 +46,8 @@ func loadEnv() {
 	mailgun.ReadEnv()
 	staffControllers.NginxFSBaseUrl = os.Getenv("NGINX_FS_BASE_URL")
 	staffControllers.NginxFSAuthorization = os.Getenv("NGINX_FS_AUTHORIZATION")
+	freight.BaseUrl = os.Getenv("FREIGHT_BASE_URL")
+	freight.Authorization = os.Getenv("FREIGHT_AUTHORIZATION")
 	log.Print("Loaded env!")
 }
 
