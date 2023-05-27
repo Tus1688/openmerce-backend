@@ -138,6 +138,7 @@ func initRouter() *gin.Engine {
 	router.GET("/api/v1/category", globalControllers.GetCategory)
 	router.GET("/api/v1/home-banner", globalControllers.GetHomeBanner)
 	router.GET("/api/v1/area/suggest", globalControllers.GetSuggestArea)
+	router.GET("/api/v1/freight-rates", globalControllers.GetRatesProduct)
 
 	return router
 }

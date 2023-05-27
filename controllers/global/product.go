@@ -152,7 +152,8 @@ func GetProduct(c *gin.Context) {
 							   GROUP BY product_refer
 							 ) pi_min ON p.id = pi_min.product_refer
 							 LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-							 WHERE p.deleted_at IS NULL and p.category_refer = ?`, category)
+							 WHERE p.deleted_at IS NULL and p.category_refer = ?
+							 LIMIT 12`, category)
 			if err != nil {
 				errChan <- err
 				return

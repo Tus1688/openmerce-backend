@@ -2,12 +2,16 @@ package global
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Tus1688/openmerce-backend/database"
 	"github.com/Tus1688/openmerce-backend/models"
+	"github.com/Tus1688/openmerce-backend/service/freight"
 	"github.com/gin-gonic/gin"
 )
 
@@ -67,6 +71,71 @@ func GetSuggestArea(c *gin.Context) {
 			log.Print(err)
 		}
 	}(request.Search, res)
+	// this endpoint is not going to change on a daily basis for the estimated price, so we can cache it for 1 day
+	c.Header("Cache-Control", "public, max-age=86400, immutable")
+	c.JSON(200, res)
+}
+
+func GetRatesProduct(c *gin.Context) {
+	var request models.GetRatesByProductRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	// check from redis cache first if there is a match
+	// redisKey := request.productid + "_" + request.areaID
+	redisKey := fmt.Sprintf("%s_%d", request.ProductID, request.AreaID)
+	val, err := database.RedisInstance[5].Get(context.Background(), redisKey).Result()
+	if err == nil {
+		var res freight.WholeResult
+		if err := json.Unmarshal([]byte(val), &res); err == nil {
+			// this endpoint is not going to change on a daily basis for the estimated price, so we can cache it for 1 day
+			c.Header("Cache-Control", "public, max-age=86400, immutable")
+			c.JSON(200, res)
+			return
+		}
+		// if there is error in unmarshalling, we will rely on manual query
+		// delete the key from redis
+		go func() {
+			if err := database.RedisInstance[5].Del(context.Background(), redisKey).Err(); err != nil {
+				log.Print(err)
+			}
+		}()
+	}
+	product := freight.CalculateFreightRequest{
+		ID: request.AreaID,
+	}
+	err = database.MysqlInstance.
+		QueryRow("SELECT weight, length, width, height FROM products WHERE id = UUID_TO_BIN(?)", request.ProductID).
+		Scan(&product.Weight, &product.Length, &product.Width, &product.Height)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.Status(404)
+			return
+		}
+		c.Status(500)
+		return
+	}
+	res, err := product.CalculateFreight()
+	if err != nil {
+		if strings.Contains(err.Error(), "there are no rates available for this route") {
+			c.Status(404)
+			return
+		}
+		c.Status(500)
+		return
+	}
+	go func(redisKey string, res freight.WholeResult) {
+		jsonString, err := json.Marshal(res)
+		if err != nil {
+			log.Print(err)
+		}
+		// set the expiration to 1 day
+		err = database.RedisInstance[5].Set(context.Background(), redisKey, string(jsonString), 24*time.Hour).Err()
+		if err != nil {
+			log.Print(err)
+		}
+	}(redisKey, res)
 	// this endpoint is not going to change on a daily basis for the estimated price, so we can cache it for 1 day
 	c.Header("Cache-Control", "public, max-age=86400, immutable")
 	c.JSON(200, res)
