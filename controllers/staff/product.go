@@ -2,10 +2,12 @@ package staff
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -288,6 +290,7 @@ func DeleteProduct(c *gin.Context) {
 			return
 		}
 	}
+	go ClearFreightCache(request.ID)
 	c.Status(200)
 }
 
@@ -482,5 +485,22 @@ func UpdateProduct(c *gin.Context) {
 		c.Status(404)
 		return
 	}
+	go ClearFreightCache(request.ID)
 	c.Status(200)
+}
+
+// ClearFreightCache is used to clear the cache on redisInstance[5] which match the productID*
+func ClearFreightCache(productID string) {
+	ctx := context.Background()
+	// clear the cache on redisInstance[5] which match the productID*
+	iter := database.RedisInstance[5].Scan(ctx, 0, productID+"*", 0).Iterator()
+	for iter.Next(ctx) {
+		err := database.RedisInstance[5].Del(ctx, iter.Val()).Err()
+		if err != nil {
+			log.Print(err)
+		}
+	}
+	if err := iter.Err(); err != nil {
+		log.Print(err)
+	}
 }

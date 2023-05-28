@@ -131,6 +131,9 @@ func initRouter() *gin.Engine {
 		customerDashboard.POST("/address", customerControllers.AddAddress)      // handle add new address
 		customerDashboard.DELETE("/address", customerControllers.DeleteAddress) // handle delete address
 		customerDashboard.PATCH("/address", customerControllers.UpdateAddress)  // handle update address
+
+		customerDashboard.GET("/pre-freight", customerControllers.PreCheckoutFreight) // get pre checkout freight cost
+		customerDashboard.GET("/pre-items", customerControllers.PreCheckoutItems)     // get pre checkout item list
 	}
 
 	// global unprotected routes for public access

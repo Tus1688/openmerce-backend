@@ -112,7 +112,8 @@ func GetProduct(c *gin.Context) {
 
 	// get categories which should be included in the home page
 	var categories []uint
-	rows, err := database.MysqlInstance.Query("SELECT id FROM categories WHERE homepage_visibility = 1 AND deleted_at IS NULL")
+	rows, err := database.MysqlInstance.
+		Query("SELECT id FROM categories WHERE homepage_visibility = 1 AND deleted_at IS NULL LIMIT 5")
 	if err != nil {
 		c.Status(500)
 		return
