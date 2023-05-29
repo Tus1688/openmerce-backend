@@ -1,6 +1,6 @@
 package models
 
 type GetRatesByProductRequest struct {
-	ProductID string `json:"product_id" binding:"uuid"`
-	AreaID    uint32 `json:"area_id" binding:"required"`
+	ProductID string `form:"product_id" binding:"uuid"`
+	AreaID    uint32 `form:"area_id" binding:"required"`
 }

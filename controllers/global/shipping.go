@@ -78,7 +78,7 @@ func GetSuggestArea(c *gin.Context) {
 
 func GetRatesProduct(c *gin.Context) {
 	var request models.GetRatesByProductRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
+	if err := c.ShouldBindQuery(&request); err != nil {
 		c.Status(400)
 		return
 	}
@@ -106,7 +106,7 @@ func GetRatesProduct(c *gin.Context) {
 		ID: request.AreaID,
 	}
 	err = database.MysqlInstance.
-		QueryRow("SELECT weight, length, width, height FROM products WHERE id = UUID_TO_BIN(?)", request.ProductID).
+		QueryRow("SELECT weight, length, width, height FROM products WHERE id = UUID_TO_BIN(?) AND deleted_at IS NULL", request.ProductID).
 		Scan(&product.Weight, &product.Length, &product.Width, &product.Height)
 	if err != nil {
 		if err == sql.ErrNoRows {
