@@ -118,10 +118,11 @@ func initRouter() *gin.Engine {
 	customerDashboard.Use(middlewares.TokenExpiredCustomer(3))
 	{
 		customerDashboard.GET("/cart", customerControllers.GetCart)
-		customerDashboard.POST("/cart", customerControllers.AddToCart)             // also handle update cart
-		customerDashboard.DELETE("/cart", customerControllers.DeleteCart)          // delete cart item based on product id
-		customerDashboard.POST("/cart-checked", customerControllers.CheckCartItem) // handle ticked cart item to be checked out
-		customerDashboard.GET("/cart-count", customerControllers.GetCartCount)     // get cart count (for cart badge)
+		customerDashboard.POST("/cart", customerControllers.AddToCart)                    // also handle update cart
+		customerDashboard.DELETE("/cart", customerControllers.DeleteCart)                 // delete cart item based on product id
+		customerDashboard.POST("/cart-checked", customerControllers.CheckCartItem)        // handle ticked cart item to be checked out
+		customerDashboard.POST("/cart-checked-all", customerControllers.CheckAllCartItem) // handle ticked all item in cart to be checked out
+		customerDashboard.GET("/cart-count", customerControllers.GetCartCount)            // get cart count (for cart badge)
 
 		customerDashboard.GET("/wishlist", customerControllers.GetWishlist)
 		customerDashboard.POST("/wishlist", customerControllers.AddToWishlist)    // does not handle update wishlist

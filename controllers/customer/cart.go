@@ -78,6 +78,38 @@ func CheckCartItem(c *gin.Context) {
 	c.Status(200)
 }
 
+func CheckAllCartItem(c *gin.Context) {
+	var request models.CheckAll
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
+	token, _ := c.Cookie("ac_cus")
+	claims, err := auth.ExtractClaimAccessTokenCustomer(token)
+	if err != nil {
+		c.Status(401)
+		return
+	}
+	customerId := claims.Uid
+	res, err := database.MysqlInstance.
+		Exec("UPDATE cart_items SET checked = ? WHERE customer_refer = UUID_TO_BIN(?)", request.State, customerId)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	if affected == 0 {
+		c.Status(409)
+		return
+	}
+	c.Status(200)
+}
+
 func GetCart(c *gin.Context) {
 	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
 	token, _ := c.Cookie("ac_cus")

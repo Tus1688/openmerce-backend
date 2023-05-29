@@ -20,3 +20,7 @@ type CartCheck struct {
 	ProductID string `json:"id" binding:"required,uuid"`
 	State     *bool  `json:"state" binding:"required"`
 }
+
+type CheckAll struct {
+	State *bool `json:"state" binding:"required"`
+}
