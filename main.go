@@ -140,6 +140,8 @@ func initRouter() *gin.Engine {
 
 		customerDashboard.GET("/pre-freight", customerControllers.PreCheckoutFreight) // get pre checkout freight cost
 		customerDashboard.GET("/pre-items", customerControllers.PreCheckoutItems)     // get pre checkout item list
+
+		customerDashboard.POST("/checkout", customerControllers.Checkout) // handle checkout
 	}
 
 	// global unprotected routes for public access

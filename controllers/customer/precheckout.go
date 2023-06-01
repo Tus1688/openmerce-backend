@@ -64,7 +64,7 @@ func PreCheckoutFreight(c *gin.Context) {
 				from products p, cart_items c
 				left join inventories i on i.product_refer = c.product_refer
 				where p.id = c.product_refer and c.checked = 1 and c.customer_refer = uuid_to_bin(?) and
-				      c.quantity <= i.quantity
+				      c.quantity <= i.quantity and p.deleted_at is null
 				group by c.customer_refer;
 				`, customerId).Scan(&weight, &volume)
 		if err != nil {
@@ -103,14 +103,33 @@ func PreCheckoutFreight(c *gin.Context) {
 
 	res, err := req.CalculateFreight()
 	if err != nil {
-		if strings.Contains(err.Error(), "there are no rates available for this route ") {
+		if strings.Contains(err.Error(), "there are no rates available for this route") {
 			c.JSON(404, gin.H{"error": err.Error()})
 			return
 		}
 		c.Status(500)
 		return
 	}
-	c.JSON(200, res)
+	var response []models.PreCheckoutFreight
+	for _, value := range res.Anteraja {
+		response = append(response, models.PreCheckoutFreight{
+			ProductCode: "anteraja-" + value.ProductCode,
+			CourierName: "anteraja",
+			ProductName: value.ProductName,
+			Etd:         value.Etd,
+			Rates:       value.Rates,
+		})
+	}
+	for _, value := range res.Sicepat {
+		response = append(response, models.PreCheckoutFreight{
+			ProductCode: "sicepat-" + value.ProductCode,
+			CourierName: "sicepat",
+			ProductName: value.ProductName,
+			Etd:         value.Etd,
+			Rates:       value.Rates,
+		})
+	}
+	c.JSON(200, response)
 }
 
 // PreCheckoutItems is the handler for getting all ticked items in the cart before the checkout process

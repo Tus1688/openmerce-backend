@@ -133,6 +133,42 @@ CREATE TABLE couriers(
     rep_name VARCHAR(60) NOT NULL
 );
 
+CREATE TABLE awaiting_orders(
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    customer_refer BINARY(16) NOT NULL,
+    customer_address_refer BINARY(16) NOT NULL,
+    courier_code VARCHAR(255) NOT NULL,
+    total_weight INT UNSIGNED NOT NULL,
+    freight_cost INT UNSIGNED,
+    item_cost INT UNSIGNED NOT NULL,
+    gross_amount INT UNSIGNED,
+    # transaction_status can be capture, settlement, pending, deny, cancel, expire, refund, partial_refund, authorize
+    transaction_status VARCHAR(255) NULL,
+    status_description VARCHAR(255) NULL,
+    payment_token VARCHAR(255) NULL,
+    payment_redirect_url VARCHAR(255) NULL,
+    created_at datetime DEFAULT CURRENT_TIMESTAMP,
+    updated_at datetime,
+    deleted_at datetime,
+    INDEX awaiting_orders_customer_refer_idx(customer_refer),
+    FOREIGN KEY (customer_refer) REFERENCES customers(id),
+    FOREIGN KEY (customer_address_refer) REFERENCES customer_addresses(id)
+);
+
+CREATE TABLE awaiting_order_items(
+    id                 BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    order_refer        BIGINT UNSIGNED   NOT NULL,
+    product_refer      BINARY(16)        NOT NULL,
+    on_buy_name        VARCHAR(85)       NOT NULL,
+    on_buy_description VARCHAR(300)      NOT NULL,
+    on_buy_price       INT UNSIGNED      NOT NULL,
+    on_buy_weight      DECIMAL(10,2) NOT NULL,
+    quantity           SMALLINT UNSIGNED NOT NULL,
+    INDEX order_details_order_refer (order_refer),
+    FOREIGN KEY (order_refer) REFERENCES awaiting_order_items (id),
+    FOREIGN KEY (product_refer) REFERENCES products (id)
+);
+
 CREATE TABLE orders(
     -- no auto increment to maintain data integrity
     id BIGINT UNSIGNED PRIMARY KEY,
