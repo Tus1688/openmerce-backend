@@ -12,3 +12,11 @@ type PreCheckoutItem struct {
 	ProductImage string `json:"image"`
 	Quantity     uint16 `json:"quantity"`
 }
+
+// CheckoutItem is used to store the product information to be purchased into third party payment gateway
+type CheckoutItem struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Price    int    `json:"price"`
+	Quantity int    `json:"quantity"`
+}

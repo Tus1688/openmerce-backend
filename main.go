@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"log"
 	"os"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/Tus1688/openmerce-backend/middlewares"
 	"github.com/Tus1688/openmerce-backend/service/freight"
 	"github.com/Tus1688/openmerce-backend/service/mailgun"
+	"github.com/Tus1688/openmerce-backend/service/midtrans"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
@@ -48,6 +50,9 @@ func loadEnv() {
 	staffControllers.NginxFSAuthorization = os.Getenv("NGINX_FS_AUTHORIZATION")
 	freight.BaseUrl = os.Getenv("FREIGHT_BASE_URL")
 	freight.Authorization = os.Getenv("FREIGHT_AUTHORIZATION")
+	midtrans.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
+	midtrans.ServerKeyEncoded = base64.StdEncoding.EncodeToString([]byte(os.Getenv("MIDTRANS_SERVER_KEY")))
+	midtrans.BaseUrl = os.Getenv("MIDTRANS_BASE_URL")
 	log.Print("Loaded env!")
 }
 
