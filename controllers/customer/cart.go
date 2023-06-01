@@ -58,7 +58,13 @@ func CheckCartItem(c *gin.Context) {
 	}
 	customerId := claims.Uid
 	res, err := database.MysqlInstance.
-		Exec("UPDATE cart_items SET checked = ? WHERE customer_refer = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)",
+		Exec(`
+			UPDATE cart_items c
+			LEFT JOIN inventories i on c.product_refer = i.product_refer
+			LEFT JOIN products p on c.product_refer = p.id
+			SET c.checked = ? WHERE c.customer_refer = UUID_TO_BIN(?) AND c.product_refer = UUID_TO_BIN(?) 
+			AND i.quantity >= c.quantity AND p.deleted_at IS NULL
+			`,
 			request.State, customerId, request.ProductID)
 	if err != nil {
 		c.Status(500)
@@ -93,7 +99,12 @@ func CheckAllCartItem(c *gin.Context) {
 	}
 	customerId := claims.Uid
 	res, err := database.MysqlInstance.
-		Exec("UPDATE cart_items SET checked = ? WHERE customer_refer = UUID_TO_BIN(?)", request.State, customerId)
+		Exec(`
+		UPDATE cart_items 
+		LEFT JOIN inventories i on cart_items.product_refer = i.product_refer
+		LEFT JOIN products p on cart_items.product_refer = p.id
+		SET checked = ? WHERE customer_refer = UUID_TO_BIN(?) AND i.quantity >= cart_items.quantity AND p.deleted_at IS NULL
+		`, request.State, customerId)
 	if err != nil {
 		c.Status(500)
 		return
