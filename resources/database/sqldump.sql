@@ -144,6 +144,8 @@ CREATE TABLE orders(
     is_paid                BOOLEAN  DEFAULT FALSE,
     # is_shipped is the flag to indicate whether the order is shipped or not
     is_shipped             BOOLEAN  DEFAULT FALSE,
+    # is_cancelled is the flag to indicate whether the order is cancelled or not
+    is_cancelled           BOOLEAN  DEFAULT FALSE,
     created_at             datetime DEFAULT CURRENT_TIMESTAMP,
     updated_at             datetime,
     deleted_at             datetime,

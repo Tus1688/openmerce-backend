@@ -37,3 +37,13 @@ type Expiry struct {
 	Unit     string `json:"unit"`
 	Duration int    `json:"duration"`
 }
+
+type WebhookNotification struct {
+	TransactionStatus string `json:"transaction_status" binding:"required"`
+	StatusCode        string `json:"status_code" binding:"required"`
+	SignatureKey      string `json:"signature_key" binding:"required"`
+	OrderId           string `json:"order_id" binding:"required"`
+	GrossAmount       string `json:"gross_amount" binding:"required"`
+	// FraudStatus isn't available in OTC payment (indomaret, alfamart, etc)
+	FraudStatus string `json:"fraud_status"`
+}

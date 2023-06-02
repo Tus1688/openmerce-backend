@@ -152,5 +152,7 @@ func initRouter() *gin.Engine {
 	router.GET("/api/v1/area/suggest", globalControllers.GetSuggestArea)
 	router.GET("/api/v1/freight-rates", globalControllers.GetRatesProduct)
 
+	// webhook
+	router.POST("/api/v1/webhook/midtrans", midtrans.HandleNotifications)
 	return router
 }

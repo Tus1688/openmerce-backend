@@ -60,7 +60,7 @@ func PreCheckoutFreight(c *gin.Context) {
 		var weight, volume float64
 		err = database.MysqlInstance.
 			QueryRow(`
-				select sum(p.weight) as weight, sum((p.length * p.height * p.width)) as volume
+				select sum(p.weight * c.quantity) as weight, sum((p.length * p.height * p.width) * c.quantity) as volume
 				from products p, cart_items c
 				left join inventories i on i.product_refer = c.product_refer
 				where p.id = c.product_refer and c.checked = 1 and c.customer_refer = uuid_to_bin(?) and
