@@ -123,39 +123,39 @@ CREATE TABLE wishlists(
     FOREIGN KEY (customer_refer) REFERENCES customers(id)
 );
 
-CREATE TABLE couriers(
-    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(25) UNIQUE NOT NULL,
-    legal_name VARCHAR(255) NOT NULL,
-    taxid VARCHAR(16) NOT NULL,
-    email VARCHAR(72) NOT NULL,
-    phone_number VARCHAR(16) NOT NULL,
-    rep_name VARCHAR(60) NOT NULL
-);
-
-CREATE TABLE awaiting_orders(
-    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    customer_refer BINARY(16) NOT NULL,
-    customer_address_refer BINARY(16) NOT NULL,
-    courier_code VARCHAR(255) NOT NULL,
-    total_weight INT UNSIGNED NOT NULL,
-    freight_cost INT UNSIGNED,
-    item_cost INT UNSIGNED NOT NULL,
-    gross_amount INT UNSIGNED,
+CREATE TABLE orders(
+    id                     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    customer_refer         BINARY(16)   NOT NULL,
+    customer_address_refer BINARY(16)   NOT NULL,
+    courier_code           VARCHAR(255) NOT NULL,
+    courier_tracking_code  VARCHAR(255) NOT NULL,
+    total_weight           INT UNSIGNED NOT NULL,
+    freight_cost           INT UNSIGNED,
+    item_cost              INT UNSIGNED NOT NULL,
+    gross_amount           INT UNSIGNED,
     # transaction_status can be capture, settlement, pending, deny, cancel, expire, refund, partial_refund, authorize
-    transaction_status VARCHAR(255) NULL,
-    status_description VARCHAR(255) NULL,
-    payment_token VARCHAR(255) NULL,
-    payment_redirect_url VARCHAR(255) NULL,
-    created_at datetime DEFAULT CURRENT_TIMESTAMP,
-    updated_at datetime,
-    deleted_at datetime,
-    INDEX awaiting_orders_customer_refer_idx(customer_refer),
-    FOREIGN KEY (customer_refer) REFERENCES customers(id),
-    FOREIGN KEY (customer_address_refer) REFERENCES customer_addresses(id)
+    transaction_status     VARCHAR(255) NULL,
+    # status_description show the reason of the transaction_status
+    status_description     VARCHAR(255) NULL,
+    # payment_token is the token that will be retrieved from the payment gateway
+    payment_token          VARCHAR(255) NULL,
+    # payment_redirect_url is the url that will be redirected to the payment gateway
+    payment_redirect_url   VARCHAR(255) NULL,
+    # is_paid is the flag to indicate whether the order is paid or not
+    is_paid                BOOLEAN  DEFAULT FALSE,
+    # is_shipped is the flag to indicate whether the order is shipped or not
+    is_shipped             BOOLEAN  DEFAULT FALSE,
+    created_at             datetime DEFAULT CURRENT_TIMESTAMP,
+    updated_at             datetime,
+    deleted_at             datetime,
+    INDEX awaiting_orders_customer_refer_idx (customer_refer),
+    INDEX is_paid_idx (is_paid, customer_refer),
+    INDEX is_shipped_idx (is_shipped),
+    FOREIGN KEY (customer_refer) REFERENCES customers (id),
+    FOREIGN KEY (customer_address_refer) REFERENCES customer_addresses (id)
 );
 
-CREATE TABLE awaiting_order_items(
+CREATE TABLE order_items(
     id                 BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     order_refer        BIGINT UNSIGNED   NOT NULL,
     product_refer      BINARY(16)        NOT NULL,
@@ -169,64 +169,6 @@ CREATE TABLE awaiting_order_items(
     FOREIGN KEY (product_refer) REFERENCES products (id)
 );
 
-CREATE TABLE orders(
-    -- no auto increment to maintain data integrity
-    id BIGINT UNSIGNED PRIMARY KEY,
-    customer_refer BINARY(16) NOT NULL,
-    customer_address_refer BINARY(16) NOT NULL,
-    courier_refer INT UNSIGNED NOT NULL,
-    total_weight INT UNSIGNED NOT NULL,
-    freight_cost INT UNSIGNED,
-    item_cost INT UNSIGNED NOT NULL,
-    gross_amount INT UNSIGNED,
-    freight_booking_id VARCHAR(25),
-    created_at datetime DEFAULT CURRENT_TIMESTAMP,
-    updated_at datetime,
-    deleted_at datetime,
-    INDEX orders_customer_refer_idx(customer_refer),
-    FOREIGN KEY (customer_refer) REFERENCES customers(id),
-    FOREIGN KEY (customer_address_refer) REFERENCES customer_addresses(id),
-    FOREIGN KEY (courier_refer) REFERENCES couriers(id)
-);
-
-CREATE TABLE payments(
-    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    order_refer BIGINT UNSIGNED NOT NULL,
-    payment_type VARCHAR(100) NOT NULL,
-    transaction_id VARCHAR(100),
-    gross_amount INT UNSIGNED,
-    status VARCHAR(20),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME,
-    INDEX payments_order_refer_idx(order_refer),
-    FOREIGN KEY (order_refer) REFERENCES orders(id)
-);
-
-CREATE TABLE shipping_logs(
-    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    waybill VARCHAR(25) NOT NULL,
-    booking_id VARCHAR(25) NOT NULL,
-    message VARCHAR(500) NOT NULL,
-    tracking_code VARCHAR(5) NOT NULL,
-    timestamp DATETIME,
-    INDEX shipping_logs_booking_id_idx (booking_id)
-    -- FOREIGN KEY (booking_id) REFERENCES orders(freight_booking_id)
-);
-
-CREATE TABLE order_details(
-    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    order_refer BIGINT UNSIGNED NOT NULL,
-    product_refer BINARY(16) NOT NULL,
-    on_buy_name VARCHAR(85) NOT NULL,
-    on_buy_description VARCHAR(300) NOT NULL,
-    on_buy_price INT UNSIGNED NOT NULL,
-    on_buy_weight SMALLINT UNSIGNED NOT NULL,
-    quantity SMALLINT UNSIGNED NOT NULL,
-    INDEX order_details_order_refer(order_refer),
-    FOREIGN KEY (order_refer) REFERENCES orders(id),
-    FOREIGN KEY (product_refer) REFERENCES products(id)
-);
-
 CREATE TABLE reviews(
     id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
     order_detail_refer BIGINT UNSIGNED NOT NULL,
@@ -235,7 +177,7 @@ CREATE TABLE reviews(
     review VARCHAR(255),
     INDEX reviews_product_refer_idx (product_refer),
     UNIQUE (order_detail_refer, product_refer),
-    FOREIGN KEY (order_detail_refer) REFERENCES order_details(id),
+    FOREIGN KEY (order_detail_refer) REFERENCES order_items(id),
     FOREIGN KEY (product_refer) REFERENCES products(id)
 );
 
