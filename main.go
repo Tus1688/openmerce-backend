@@ -115,6 +115,7 @@ func initRouter() *gin.Engine {
 		system.Use(middlewares.TokenIsSysAdmin())
 		{
 			system.POST("/home-banner", staffControllers.AddHomeBanner)
+			system.DELETE("/home-banner", staffControllers.DeleteHomeBanner)
 		}
 	}
 
