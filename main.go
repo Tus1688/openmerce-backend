@@ -53,6 +53,7 @@ func loadEnv() {
 	midtrans.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
 	midtrans.ServerKeyEncoded = base64.StdEncoding.EncodeToString([]byte(os.Getenv("MIDTRANS_SERVER_KEY")))
 	midtrans.BaseUrl = os.Getenv("MIDTRANS_BASE_URL")
+	midtrans.BaseOrderId = os.Getenv("MIDTRANS_BASE_ORDER_ID")
 	log.Print("Loaded env!")
 }
 

@@ -11,6 +11,10 @@ var ServerKey string
 var ServerKeyEncoded string
 var BaseUrl string
 
+// BaseOrderId is used to prefix the order id in database
+// for example if the order id is 1, then the order id in midtrans is "something-1"
+var BaseOrderId string
+
 func (r *RequestSnap) CreatePayment() (ResponseSnap, error) {
 	url := BaseUrl + "/snap/v1/transactions"
 	body, err := json.Marshal(r)

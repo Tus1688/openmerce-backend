@@ -128,11 +128,10 @@ CREATE TABLE orders(
     customer_refer         BINARY(16)   NOT NULL,
     customer_address_refer BINARY(16)   NOT NULL,
     courier_code           VARCHAR(255) NOT NULL,
-    courier_tracking_code  VARCHAR(255) NOT NULL,
-    total_weight           INT UNSIGNED NOT NULL,
-    freight_cost           INT UNSIGNED,
+    courier_tracking_code  VARCHAR(255) NULL,
+    freight_cost           INT UNSIGNED NOT NULL,
     item_cost              INT UNSIGNED NOT NULL,
-    gross_amount           INT UNSIGNED,
+    gross_amount           INT UNSIGNED NOT NULL,
     # transaction_status can be capture, settlement, pending, deny, cancel, expire, refund, partial_refund, authorize
     transaction_status     VARCHAR(255) NULL,
     # status_description show the reason of the transaction_status
@@ -165,7 +164,7 @@ CREATE TABLE order_items(
     on_buy_weight      DECIMAL(10,2) NOT NULL,
     quantity           SMALLINT UNSIGNED NOT NULL,
     INDEX order_details_order_refer (order_refer),
-    FOREIGN KEY (order_refer) REFERENCES awaiting_order_items (id),
+    FOREIGN KEY (order_refer) REFERENCES orders(id),
     FOREIGN KEY (product_refer) REFERENCES products (id)
 );
 
