@@ -5,10 +5,10 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/Tus1688/openmerce-backend/database"
+	"github.com/Tus1688/openmerce-backend/logging"
 	"github.com/gin-gonic/gin"
 )
 
@@ -83,11 +83,12 @@ func HandleNotifications(c *gin.Context) {
 			_, err := database.MysqlInstance.
 				Exec("UPDATE orders SET is_paid = true, transaction_status = ? WHERE id = ?", request.TransactionStatus, OrderId)
 			if err != nil {
-				log.Print(err)
+				go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 				// retry once
 				c.Status(500)
 				return
 			}
+			go stockHandler(OrderId)
 		}
 		// if the request.TransactionStatus is "cancel" or "deny" or "expire"
 		// set the is_cancelled to true
@@ -95,7 +96,7 @@ func HandleNotifications(c *gin.Context) {
 		_, err := database.MysqlInstance.
 			Exec("UPDATE orders SET is_cancelled = true, transaction_status = ? WHERE id = ?", request.TransactionStatus, OrderId)
 		if err != nil {
-			log.Print(err)
+			go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 			// retry once
 			c.Status(500)
 			return
@@ -105,7 +106,7 @@ func HandleNotifications(c *gin.Context) {
 		_, err := database.MysqlInstance.
 			Exec("UPDATE orders SET transaction_status = ? WHERE id = ?", request.TransactionStatus, OrderId)
 		if err != nil {
-			log.Print(err)
+			go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 			// retry once
 			c.Status(500)
 			return
@@ -113,4 +114,77 @@ func HandleNotifications(c *gin.Context) {
 	}
 
 	c.Status(200)
+}
+
+// stockHandler is used to handle the stock and supposed to run in another goroutine
+func stockHandler(orderID string) {
+	// get the items in order first
+	var items []productHelper
+	rows, err := database.MysqlInstance.
+		Query("SELECT BIN_TO_UUID(product_refer), quantity FROM order_items WHERE order_refer = ?", orderID)
+	if err != nil {
+		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to get items in order :"+orderID)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item productHelper
+		err := rows.Scan(&item.productID, &item.quantity)
+		if err != nil {
+			go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to scan items in order :"+orderID)
+			return
+		}
+		items = append(items, item)
+	}
+
+	// acquire the lock to prevent race condition
+	tx, err := database.MysqlInstance.Begin()
+	if err != nil {
+		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to begin transaction, order :"+orderID)
+		return
+	}
+	defer tx.Rollback()
+	// lock the rows of inventories table
+	_, err = tx.Exec("SELECT * FROM inventories WHERE id IN (SELECT product_refer FROM order_items WHERE order_refer = ?) FOR UPDATE", orderID)
+	if err != nil {
+		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to lock rows of inventories table, order :"+orderID)
+		return
+	}
+	// update and make sure the stock after decreased is not negative
+	for _, item := range items {
+		// set the current quantity in inventories into quantity - item.quantity where id = item.productID and quantity >= item.quantity
+		res, err := tx.
+			Exec("UPDATE inventories SET quantity = quantity - ? WHERE product_refer = UUID_TO_BIN(?) AND quantity >= ?", item.quantity, item.productID, item.quantity)
+		if err != nil {
+			go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to update inventories table, order :"+orderID)
+			return
+		}
+		// if the affected rows is 0, then the quantity is not enough
+		affected, err := res.RowsAffected()
+		if err != nil {
+			go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to get affected rows, order :"+orderID)
+			return
+		}
+		// abort the transaction and update the order status to deny and set the need_refund to true
+		if affected == 0 {
+			// run the query on different transaction
+			_, err := database.MysqlInstance.
+				Exec("UPDATE orders SET transaction_status = 'deny', need_refund = true, status_description = 'sorry, stock is not enough to fulfill the orders' WHERE id = ?", orderID)
+			if err != nil {
+				go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to update order status to deny and need_refund to true, order :"+orderID)
+				return
+			}
+			return
+		}
+	}
+	// commit the transaction
+	if err := tx.Commit(); err != nil {
+		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to commit transaction, order :"+orderID)
+		return
+	}
+}
+
+type productHelper struct {
+	productID string
+	quantity  int
 }

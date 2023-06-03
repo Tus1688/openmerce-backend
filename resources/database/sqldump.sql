@@ -146,6 +146,8 @@ CREATE TABLE orders(
     is_shipped             BOOLEAN  DEFAULT FALSE,
     # is_cancelled is the flag to indicate whether the order is cancelled or not
     is_cancelled           BOOLEAN  DEFAULT FALSE,
+    # need_refund is the flag to indicate whether the order is need to be refunded or not (if the quantity is not enough)
+    need_refund            BOOLEAN  DEFAULT FALSE,
     created_at             datetime DEFAULT CURRENT_TIMESTAMP,
     updated_at             datetime,
     deleted_at             datetime,
@@ -201,6 +203,13 @@ CREATE TABLE homepage_banner(
     href varchar(255) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME
+);
+
+CREATE TABLE logs(
+    id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
+    log_level VARCHAR(7) NOT NULL,
+    info VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE blacklist_domains (
