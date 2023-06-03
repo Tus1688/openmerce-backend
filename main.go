@@ -52,7 +52,8 @@ func loadEnv() {
 	freight.Authorization = os.Getenv("FREIGHT_AUTHORIZATION")
 	midtrans.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
 	midtrans.ServerKeyEncoded = base64.StdEncoding.EncodeToString([]byte(os.Getenv("MIDTRANS_SERVER_KEY")))
-	midtrans.BaseUrl = os.Getenv("MIDTRANS_BASE_URL")
+	midtrans.BaseUrlSnap = os.Getenv("MIDTRANS_BASE_URL_SNAP")
+	midtrans.BaseUrlCoreApi = os.Getenv("MIDTRANS_BASE_URL_CORE_API")
 	midtrans.BaseOrderId = os.Getenv("MIDTRANS_BASE_ORDER_ID")
 	log.Print("Loaded env!")
 }
@@ -143,7 +144,8 @@ func initRouter() *gin.Engine {
 		customerDashboard.GET("/pre-freight", customerControllers.PreCheckoutFreight) // get pre checkout freight cost
 		customerDashboard.GET("/pre-items", customerControllers.PreCheckoutItems)     // get pre checkout item list
 
-		customerDashboard.POST("/checkout", customerControllers.Checkout) // handle checkout
+		customerDashboard.POST("/checkout", customerControllers.Checkout)         // handle checkout
+		customerDashboard.DELETE("/checkout", customerControllers.CancelCheckout) // handle cancel checkout (before payment)
 	}
 
 	// global unprotected routes for public access

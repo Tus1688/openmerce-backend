@@ -47,3 +47,8 @@ type WebhookNotification struct {
 	// FraudStatus isn't available in OTC payment (indomaret, alfamart, etc)
 	FraudStatus string `json:"fraud_status"`
 }
+
+type ResponseErrorDeleteOrder struct {
+	StatusCode    string `json:"status_code"`
+	StatusMessage string `json:"status_message"`
+}

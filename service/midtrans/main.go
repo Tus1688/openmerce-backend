@@ -14,14 +14,15 @@ import (
 
 var ServerKey string
 var ServerKeyEncoded string
-var BaseUrl string
+var BaseUrlSnap string
+var BaseUrlCoreApi string
 
 // BaseOrderId is used to prefix the order id in database
 // for example if the order id is 1, then the order id in midtrans is "something-1"
 var BaseOrderId string
 
 func (r *RequestSnap) CreatePayment() (ResponseSnap, error) {
-	url := BaseUrl + "/snap/v1/transactions"
+	url := BaseUrlSnap + "/snap/v1/transactions"
 	body, err := json.Marshal(r)
 	if err != nil {
 		return ResponseSnap{}, err
@@ -54,6 +55,32 @@ func (r *RequestSnap) CreatePayment() (ResponseSnap, error) {
 		return ResponseSnap{}, err
 	}
 	return result, nil
+}
+
+func DeleteOrder(orderId string) error {
+	url := BaseUrlCoreApi + "/v2/" + BaseOrderId + "-" + orderId + "/cancel"
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Basic "+ServerKeyEncoded)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		var result ResponseErrorDeleteOrder
+		err = json.NewDecoder(res.Body).Decode(&result)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("%v", result.StatusMessage)
+	}
+	return nil
 }
 
 func HandleNotifications(c *gin.Context) {

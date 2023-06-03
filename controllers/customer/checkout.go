@@ -11,6 +11,7 @@ import (
 
 	"github.com/Tus1688/openmerce-backend/auth"
 	"github.com/Tus1688/openmerce-backend/database"
+	"github.com/Tus1688/openmerce-backend/logging"
 	"github.com/Tus1688/openmerce-backend/models"
 	"github.com/Tus1688/openmerce-backend/service/freight"
 	"github.com/Tus1688/openmerce-backend/service/midtrans"
@@ -313,4 +314,59 @@ func Checkout(c *gin.Context) {
 	}()
 
 	c.JSON(200, paymentRes)
+}
+
+func CancelCheckout(c *gin.Context) {
+	var request models.APICommonQueryID
+	if err := c.ShouldBindQuery(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
+	token, _ := c.Cookie("ac_cus")
+	claims, err := auth.ExtractClaimAccessTokenCustomer(token)
+	if err != nil {
+		c.Status(401)
+		return
+	}
+	customerId := claims.Uid
+	var state string
+	err = database.MysqlInstance.
+		QueryRow("SELECT COALESCE(transaction_status, '') FROM orders WHERE id = ? AND customer_refer = UUID_TO_BIN(?) AND is_paid = 0 AND is_cancelled = 0", request.ID, customerId).
+		Scan(&state)
+	if err != nil {
+		// if there is no row it means the order id is not exist for the current customer
+		if err == sql.ErrNoRows {
+			c.Status(404)
+			return
+		}
+		c.Status(500)
+		return
+	}
+	// if there is nothing in state it means the customer haven't chosen the payment method
+	// and the midtrans haven't created the transaction
+	if state == "" {
+		// only set the is_cancelled to 1
+		_, err := database.MysqlInstance.Exec("UPDATE orders SET is_cancelled = 1, transaction_status = 'cancel', status_description = 'customer request for cancel' WHERE id = ? AND customer_refer = UUID_TO_BIN(?)", request.ID, customerId)
+		if err != nil {
+			c.Status(500)
+			return
+		}
+		c.Status(200)
+		return
+	}
+	// suppose the transaction_status already filled and the transaction already created in midtrans, we need to cancel the transaction first in midtrans
+	if err := midtrans.DeleteOrder(strconv.Itoa(request.ID)); err != nil {
+		go logging.InsertLog(logging.ERROR, "cancel checkout unable to cancel the transaction in midtrans, order id:"+strconv.Itoa(request.ID)+"err :"+err.Error())
+		c.Status(500)
+		return
+	}
+	// set the transaction status to pending cancel as we need to wait for the midtrans to completely cancel the transaction
+	_, err = database.MysqlInstance.
+		Exec("UPDATE orders SET transaction_status = 'pending cancel', status_description = 'customer request for cancel' WHERE id = ? AND customer_refer = UUID_TO_BIN(?)", request.ID, customerId)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	c.Status(200)
 }
