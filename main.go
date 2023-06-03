@@ -146,6 +146,8 @@ func initRouter() *gin.Engine {
 
 		customerDashboard.POST("/checkout", customerControllers.Checkout)         // handle checkout
 		customerDashboard.DELETE("/checkout", customerControllers.CancelCheckout) // handle cancel checkout (before payment)
+
+		customerDashboard.GET("/order", customerControllers.GetOrder) // get all order
 	}
 
 	// global unprotected routes for public access
