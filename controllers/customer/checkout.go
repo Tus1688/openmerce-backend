@@ -313,6 +313,7 @@ func Checkout(c *gin.Context) {
 		}
 	}()
 
+	go updateCartCache(customerId)
 	c.JSON(200, paymentRes)
 }
 

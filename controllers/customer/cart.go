@@ -10,9 +10,9 @@ import (
 
 	"github.com/Tus1688/openmerce-backend/auth"
 	"github.com/Tus1688/openmerce-backend/database"
+	"github.com/Tus1688/openmerce-backend/logging"
 	"github.com/Tus1688/openmerce-backend/models"
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 )
 
 func GetCartCount(c *gin.Context) {
@@ -28,7 +28,7 @@ func GetCartCount(c *gin.Context) {
 	var count uint8
 	err = database.RedisInstance[3].Get(context.Background(), customerId).Scan(&count)
 	//	if there is no cache, get the count from database
-	if err == redis.Nil {
+	if err != nil {
 		err := database.MysqlInstance.QueryRow("SELECT COUNT(customer_refer) FROM cart_items WHERE customer_refer = UUID_TO_BIN(?)", customerId).Scan(&count)
 		if err != nil {
 			// there won't be sql.ErrNoRows as it will return 0
@@ -272,6 +272,9 @@ func updateCartCache(customerID string) {
 		QueryRow("SELECT COUNT(customer_refer) FROM cart_items WHERE customer_refer = UUID_TO_BIN(?)", customerID).
 		Scan(&count)
 	if err == nil {
-		_ = database.RedisInstance[3].Set(context.Background(), customerID, count, 24*14*time.Hour).Err()
+		err = database.RedisInstance[3].Set(context.Background(), customerID, count, 24*14*time.Hour).Err()
+		if err != nil {
+			logging.InsertLog(logging.ERROR, "unable to update cart cache (redis)")
+		}
 	}
 }

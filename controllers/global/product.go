@@ -1,13 +1,49 @@
 package global
 
 import (
+	"context"
 	"database/sql"
 	"sync"
+	"time"
 
 	"github.com/Tus1688/openmerce-backend/database"
+	"github.com/Tus1688/openmerce-backend/logging"
 	"github.com/Tus1688/openmerce-backend/models"
 	"github.com/gin-gonic/gin"
 )
+
+func GetProductSold(c *gin.Context) {
+	var request models.APICommonQueryUUID
+	if err := c.ShouldBindQuery(&request); err != nil {
+		c.Status(400)
+		return
+	}
+	// check from redis[6] if this product is cached
+	var count uint32
+	err := database.RedisInstance[6].Get(context.Background(), request.ID).Scan(&count)
+	// if there is no cache, get the count from database
+	if err != nil {
+		err := database.MysqlInstance.
+			QueryRow("SELECT SUM(quantity) FROM order_items oi LEFT JOIN orders o on oi.order_refer = o.id WHERE oi.product_refer = UUID_TO_BIN(?) AND o.is_paid = 1 AND o.transaction_status = 'settlement' OR o.transaction_status = 'capture' GROUP BY product_refer", request.ID).
+			Scan(&count)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.Status(404)
+				return
+			}
+			c.Status(500)
+			return
+		}
+		// update the redis cache
+		go func(curValue uint32, productID string) {
+			err = database.RedisInstance[6].Set(context.Background(), productID, curValue, 24*14*time.Hour).Err()
+			if err != nil {
+				logging.InsertLog(logging.ERROR, "unable to update redis cache for product sold count")
+			}
+		}(count, request.ID)
+	}
+	c.JSON(200, gin.H{"count": count})
+}
 
 func GetProduct(c *gin.Context) {
 	var requestID models.APICommonQueryUUID

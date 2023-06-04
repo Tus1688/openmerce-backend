@@ -2,6 +2,7 @@ package midtrans
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
@@ -208,6 +209,14 @@ func stockHandler(orderID string) {
 	if err := tx.Commit(); err != nil {
 		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to commit transaction, order :"+orderID)
 		return
+	}
+	// invalidate redis cache
+	for _, item := range items {
+		err := database.RedisInstance[6].Del(context.Background(), item.productID).Err()
+		if err != nil {
+			go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to invalidate redis cache, order :"+orderID)
+			return
+		}
 	}
 }
 

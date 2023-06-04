@@ -14,12 +14,13 @@ import (
 3 for customer_cart counts (ttl: 14 day) key: customer_id value: counts
 4 for area suggestion result for global (ttl: 30 day) key: area_id value: JSON of area response
 5 for get rates by product result for global (ttl: 10 day): key: product_id_area_id value: JSON of freight response
+6 for total sold by product for global (ttl: 10 day): key: product_id value: total sold
 */
 var RedisInstance []*redis.Client
 var ctx = context.Background()
 
 func NewRedis() error {
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 7; i++ {
 		// create new redis client
 		addr := os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT")
 		client := redis.NewClient(&redis.Options{
