@@ -1,6 +1,10 @@
 package customer
 
 import (
+	"database/sql"
+	"fmt"
+	"sync"
+
 	"github.com/Tus1688/openmerce-backend/auth"
 	"github.com/Tus1688/openmerce-backend/database"
 	"github.com/Tus1688/openmerce-backend/models"
@@ -16,6 +20,128 @@ func GetOrder(c *gin.Context) {
 		return
 	}
 	customerId := claims.Uid
+	var request models.APICommonQueryID
+	if err := c.ShouldBindQuery(&request); err == nil {
+		//	get the specific order detail
+		var response models.OrderDetailResponse
+		wg := sync.WaitGroup{}
+		mu := sync.Mutex{}
+		errChan := make(chan error)
+		wg.Add(3)
+
+		// get the order details
+		go func() {
+			defer wg.Done()
+			var id uint64
+			var status, statusDescription, createdAt, courier, TrackingCode string
+			var itemCost, shippingCost, totalCost uint
+			err := database.MysqlInstance.
+				QueryRow(`SELECT id, coalesce(transaction_status, ''), coalesce(status_description, ''), DATE_FORMAT(created_at, '%d %M %Y'),
+       			courier_code,  coalesce(courier_tracking_code, ''), item_cost, freight_cost, gross_amount
+       			FROM orders WHERE customer_refer = UUID_TO_BIN(?) AND id = ?`, customerId, request.ID).
+				Scan(&id, &status, &statusDescription, &createdAt, &courier, &TrackingCode, &itemCost, &shippingCost, &totalCost)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					errChan <- fmt.Errorf("order not found")
+				}
+				errChan <- err
+				return
+			}
+			mu.Lock()
+			response.ID = id
+			response.Status = status
+			response.StatusDescription = statusDescription
+			response.CreatedAt = createdAt
+			response.Courier = courier
+			response.TrackingCode = TrackingCode
+			response.ItemCost = itemCost
+			response.ShippingCost = shippingCost
+			response.TotalCost = totalCost
+			mu.Unlock()
+		}()
+
+		// get the items
+		go func() {
+			defer wg.Done()
+			var itemList []models.PreCheckoutItem
+			rows, err := database.MysqlInstance.
+				Query(`
+					select BIN_TO_UUID(oi.product_refer), oi.on_buy_name, oi.on_buy_price, coalesce(pi.image, ''), oi.quantity
+					from order_items oi
+					         left join (select pi.product_refer, CONCAT(BIN_TO_UUID(pi.id), '.webp') as image
+					                    from (select product_refer, min(id) as id
+					                          from product_images
+					                          group by product_refer) pi) pi on pi.product_refer = oi.product_refer
+					         inner join orders o on oi.order_refer = o.id
+					where oi.order_refer = ?
+					  and o.customer_refer = UUID_TO_BIN(?);
+				`, request.ID, customerId)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var item models.PreCheckoutItem
+				err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity)
+				if err != nil {
+					errChan <- err
+					return
+				}
+				itemList = append(itemList, item)
+			}
+			mu.Lock()
+			response.ItemList = itemList
+			mu.Unlock()
+		}()
+
+		// get the address details
+		go func() {
+			defer wg.Done()
+			var address models.AddressOrderResponse
+			err := database.MysqlInstance.
+				QueryRow(`
+					select ca.recipient_name, ca.phone_number, ca.full_address, sa.full_name
+					from orders o
+					         left join customer_addresses ca on o.customer_address_refer = ca.id
+					         left join shipping_areas sa on ca.shipping_area_refer = sa.id
+					where o.id = ?
+					  and o.customer_refer = UUID_TO_BIN(?);
+				`, request.ID, customerId).
+				Scan(&address.RecipientName, &address.PhoneNumber, &address.FullAddress, &address.ShippingArea)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					errChan <- fmt.Errorf("order not found")
+					return
+				}
+				errChan <- err
+				return
+			}
+			mu.Lock()
+			response.AddressDetail = address
+			mu.Unlock()
+		}()
+
+		go func() {
+			wg.Wait()
+			close(errChan)
+		}()
+
+		for err := range errChan {
+			if err != nil {
+				if err.Error() == "order not found" {
+					c.Status(404)
+				} else {
+					c.Status(500)
+				}
+				return
+			}
+		}
+		c.JSON(200, response)
+		return
+	}
+
+	// otherwise get the all order list
 	var response []models.OrderResponse
 	// get the order list from database
 	rows, err := database.MysqlInstance.
