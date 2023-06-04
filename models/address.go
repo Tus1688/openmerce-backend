@@ -27,6 +27,7 @@ type AddressResponseDetail struct {
 	RecipientName string `json:"recipient_name"`
 	PhoneNumber   string `json:"phone_number"`
 	ShippingArea  string `json:"shipping_area"`
+	AreaID        uint32 `json:"area_id"`
 	PostalCode    string `json:"postal_code"`
 }
 

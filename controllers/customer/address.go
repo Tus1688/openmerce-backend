@@ -55,11 +55,11 @@ func GetAddress(c *gin.Context) {
 	if err := c.ShouldBindQuery(&request); err == nil {
 		var response models.AddressResponseDetail
 		err := database.MysqlInstance.QueryRow(`
-					select BIN_TO_UUID(c.id), c.label, c.full_address, c.note, c.recipient_name, c.phone_number, s.full_name, c.postal_code
+					select BIN_TO_UUID(c.id), c.label, c.full_address, c.note, c.recipient_name, c.phone_number, s.full_name, s.id, c.postal_code
 					from customer_addresses c, shipping_areas s
 					where c.shipping_area_refer = s.id and c.customer_refer = UUID_TO_BIN(?) and c.id = UUID_TO_BIN(?)
 					`, customerId, request.ID).
-			Scan(&response.ID, &response.Label, &response.FullAddress, &response.Note, &response.RecipientName, &response.PhoneNumber, &response.ShippingArea, &response.PostalCode)
+			Scan(&response.ID, &response.Label, &response.FullAddress, &response.Note, &response.RecipientName, &response.PhoneNumber, &response.ShippingArea, &response.AreaID, &response.PostalCode)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.Status(404)
