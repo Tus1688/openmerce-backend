@@ -156,6 +156,7 @@ func initRouter() *gin.Engine {
 	// global unprotected routes for public access
 	router.GET("/api/v1/product", globalControllers.GetProduct)
 	router.GET("/api/v1/product-sold", globalControllers.GetProductSold)
+	router.GET("/api/v1/product-review", globalControllers.GetReviewGlobal)
 	router.GET("/api/v1/category", globalControllers.GetCategory)
 	router.GET("/api/v1/home-banner", globalControllers.GetHomeBanner)
 	router.GET("/api/v1/area/suggest", globalControllers.GetSuggestArea)

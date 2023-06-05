@@ -16,3 +16,10 @@ type ReviewResponseCustomer struct {
 	Review       string `json:"review"`
 	CreatedAt    string `json:"created_at"`
 }
+
+type ReviewResponseGlobal struct {
+	ID        string `json:"id"`
+	Rating    uint8  `json:"rating"`
+	Review    string `json:"review"`
+	CreatedAt string `json:"created_at"`
+}
