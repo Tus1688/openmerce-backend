@@ -16,6 +16,11 @@ func CreateReview(c *gin.Context) {
 		c.Status(400)
 		return
 	}
+	// check if the request.rating is in the range of 1-5
+	if request.Rating < 1 || request.Rating > 5 {
+		c.Status(400)
+		return
+	}
 	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
 	token, _ := c.Cookie("ac_cus")
 	claims, err := auth.ExtractClaimAccessTokenCustomer(token)
@@ -52,4 +57,56 @@ func CreateReview(c *gin.Context) {
 		return
 	}
 	c.Status(201)
+}
+
+// GetReview here is meant to get the review of every review of the customer
+func GetReview(c *gin.Context) {
+	// the token should be valid and exist as it is protected by TokenExpiredCustomer middleware
+	token, _ := c.Cookie("ac_cus")
+	claims, err := auth.ExtractClaimAccessTokenCustomer(token)
+	if err != nil {
+		c.Status(401)
+		return
+	}
+	customerId := claims.Uid
+	var response []models.ReviewResponseCustomer
+	rows, err := database.MysqlInstance.
+		Query(`
+			SELECT BIN_TO_UUID(r.id),
+			       BIN_TO_UUID(p.id),
+			       p.name,
+			       COALESCE(pi.image, ''),
+			       r.rating,
+			       COALESCE(r.review, ''),
+			       date_format(o.created_at, '%d %M %Y')
+			FROM reviews r
+			         LEFT JOIN order_items oi on r.order_item_refer = oi.id
+			         LEFT JOIN products p on r.product_refer = p.id
+			         LEFT JOIN orders o on oi.order_refer = o.id
+			         left join (select pi.product_refer, CONCAT(BIN_TO_UUID(pi.id), '.webp') as image
+			                    from (select product_refer, min(id) as id
+			                          from product_images
+			                          group by product_refer) pi) pi on pi.product_refer = oi.product_refer
+			WHERE o.customer_refer = UUID_TO_BIN(?);
+			`, customerId)
+	if err != nil {
+		c.Status(500)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var review models.ReviewResponseCustomer
+		err = rows.Scan(&review.ID, &review.ProductID, &review.ProductName, &review.ProductImage, &review.Rating,
+			&review.Review, &review.CreatedAt)
+		if err != nil {
+			c.Status(500)
+			return
+		}
+		response = append(response, review)
+	}
+	if len(response) == 0 {
+		c.Status(404)
+		return
+	}
+	c.JSON(200, response)
 }
