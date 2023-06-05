@@ -150,7 +150,7 @@ func GetOrder(c *gin.Context) {
 			SELECT o.id,
 			       DATE_FORMAT(o.created_at, '%d %M %Y') AS created_at,
 			       o.gross_amount,
-			       o.transaction_status,
+			       COALESCE(o.transaction_status, ''),
 			       oi.item_count,
 			       COALESCE(pi.image, ''),
 			       p.name
