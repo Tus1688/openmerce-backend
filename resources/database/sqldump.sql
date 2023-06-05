@@ -174,13 +174,13 @@ CREATE TABLE order_items(
 
 CREATE TABLE reviews(
     id BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-    order_detail_refer BIGINT UNSIGNED NOT NULL,
+    order_item_refer BIGINT UNSIGNED NOT NULL,
     product_refer BINARY(16) NOT NULL,
     rating TINYINT UNSIGNED NOT NULL,
     review VARCHAR(255),
     INDEX reviews_product_refer_idx (product_refer),
-    UNIQUE (order_detail_refer, product_refer),
-    FOREIGN KEY (order_detail_refer) REFERENCES order_items(id),
+    UNIQUE (order_item_refer),
+    FOREIGN KEY (order_item_refer) REFERENCES order_items(id),
     FOREIGN KEY (product_refer) REFERENCES products(id)
 );
 

@@ -63,16 +63,17 @@ func GetOrder(c *gin.Context) {
 		// get the items
 		go func() {
 			defer wg.Done()
-			var itemList []models.PreCheckoutItem
+			var itemList []models.ItemListOrderDetail
 			rows, err := database.MysqlInstance.
 				Query(`
-					select BIN_TO_UUID(oi.product_refer), oi.on_buy_name, oi.on_buy_price, coalesce(pi.image, ''), oi.quantity
+					select BIN_TO_UUID(oi.product_refer), oi.on_buy_name, oi.on_buy_price, coalesce(pi.image, ''), oi.quantity, (if (r.id is null, false, true)) as reviewed
 					from order_items oi
 					         left join (select pi.product_refer, CONCAT(BIN_TO_UUID(pi.id), '.webp') as image
 					                    from (select product_refer, min(id) as id
 					                          from product_images
 					                          group by product_refer) pi) pi on pi.product_refer = oi.product_refer
 					         inner join orders o on oi.order_refer = o.id
+					left join reviews r on oi.id = r.order_item_refer
 					where oi.order_refer = ?
 					  and o.customer_refer = UUID_TO_BIN(?);
 				`, request.ID, customerId)
@@ -82,8 +83,8 @@ func GetOrder(c *gin.Context) {
 			}
 			defer rows.Close()
 			for rows.Next() {
-				var item models.PreCheckoutItem
-				err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity)
+				var item models.ItemListOrderDetail
+				err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity, &item.Reviewed)
 				if err != nil {
 					errChan <- err
 					return
