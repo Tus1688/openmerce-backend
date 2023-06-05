@@ -95,5 +95,5 @@ type ProductDetail struct {
 	CumulativeReview float64  `json:"cumulative_review"`
 	ImageUrls        []string `json:"image_urls"`
 	Dimension        string   `json:"dimension"`
-	Stock            uint16   `json:"stock"`
+	Stock            uint     `json:"stock"`
 }
