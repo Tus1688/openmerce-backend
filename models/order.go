@@ -25,6 +25,7 @@ type OrderDetailResponse struct {
 }
 
 type ItemListOrderDetail struct {
+	OrderID uint64 `json:"order_id"`
 	PreCheckoutItem
 	Reviewed bool `json:"reviewed"`
 }

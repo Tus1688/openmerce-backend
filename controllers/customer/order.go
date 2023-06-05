@@ -66,7 +66,7 @@ func GetOrder(c *gin.Context) {
 			var itemList []models.ItemListOrderDetail
 			rows, err := database.MysqlInstance.
 				Query(`
-					select BIN_TO_UUID(oi.product_refer), oi.on_buy_name, oi.on_buy_price, coalesce(pi.image, ''), oi.quantity, (if (r.id is null, false, true)) as reviewed
+					select oi.id, BIN_TO_UUID(oi.product_refer), oi.on_buy_name, oi.on_buy_price, coalesce(pi.image, ''), oi.quantity, (if (r.id is null, false, true)) as reviewed
 					from order_items oi
 					         left join (select pi.product_refer, CONCAT(BIN_TO_UUID(pi.id), '.webp') as image
 					                    from (select product_refer, min(id) as id
@@ -84,7 +84,7 @@ func GetOrder(c *gin.Context) {
 			defer rows.Close()
 			for rows.Next() {
 				var item models.ItemListOrderDetail
-				err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity, &item.Reviewed)
+				err := rows.Scan(&item.OrderID, &item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity, &item.Reviewed)
 				if err != nil {
 					errChan <- err
 					return
