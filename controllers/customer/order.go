@@ -33,13 +33,13 @@ func GetOrder(c *gin.Context) {
 		go func() {
 			defer wg.Done()
 			var id uint64
-			var status, statusDescription, createdAt, courier, TrackingCode string
+			var status, statusDescription, paymentUrl, createdAt, courier, TrackingCode string
 			var itemCost, shippingCost, totalCost uint
 			err := database.MysqlInstance.
-				QueryRow(`SELECT id, coalesce(transaction_status, ''), coalesce(status_description, ''), DATE_FORMAT(created_at, '%d %M %Y'),
+				QueryRow(`SELECT id, coalesce(transaction_status, ''), coalesce(status_description, ''), payment_redirect_url, DATE_FORMAT(created_at, '%d %M %Y'),
        			courier_code,  coalesce(courier_tracking_code, ''), item_cost, freight_cost, gross_amount
        			FROM orders WHERE customer_refer = UUID_TO_BIN(?) AND id = ?`, customerId, request.ID).
-				Scan(&id, &status, &statusDescription, &createdAt, &courier, &TrackingCode, &itemCost, &shippingCost, &totalCost)
+				Scan(&id, &status, &statusDescription, &paymentUrl, &createdAt, &courier, &TrackingCode, &itemCost, &shippingCost, &totalCost)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					errChan <- fmt.Errorf("order not found")
@@ -57,6 +57,10 @@ func GetOrder(c *gin.Context) {
 			response.ItemCost = itemCost
 			response.ShippingCost = shippingCost
 			response.TotalCost = totalCost
+			// if the user hasn't chosen the payment method, then the transaction status will be empty
+			if status == "pending" || status == "" {
+				response.PaymentUrl = paymentUrl
+			}
 			mu.Unlock()
 		}()
 
