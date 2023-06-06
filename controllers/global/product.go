@@ -184,16 +184,15 @@ func GetProduct(c *gin.Context) {
 				Query(`SELECT BIN_TO_UUID(p.id) AS id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') AS image, p.cumulative_review,
 					       COUNT(oi.id) AS sold_count
 					FROM products p
-					         LEFT JOIN (
-					    SELECT product_refer, MIN(created_at) AS min_created_at
-					    FROM product_images
-					    GROUP BY product_refer
+					LEFT JOIN (
+					  SELECT product_refer, MIN(created_at) AS min_created_at
+					  FROM product_images
+					  GROUP BY product_refer
 					) pi_min ON p.id = pi_min.product_refer
-					         LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-					         LEFT JOIN order_items oi ON oi.product_refer = p.id
-					         LEFT JOIN orders o ON oi.order_refer = o.id
+					LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
+					LEFT JOIN order_items oi ON oi.product_refer = p.id
+					LEFT JOIN orders o ON oi.order_refer = o.id AND (o.transaction_status = 'settlement' OR o.transaction_status = 'capture')
 					WHERE p.deleted_at IS NULL AND p.category_refer = ?
-					AND o.transaction_status = 'settlement' or o.transaction_status = 'capture'
 					GROUP BY p.id, p.name, p.price, image, p.cumulative_review
 					LIMIT 12;`, category)
 			if err != nil {
