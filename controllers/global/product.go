@@ -181,16 +181,21 @@ func GetProduct(c *gin.Context) {
 			}
 			//  get products in the category
 			rows, err := database.MysqlInstance.
-				Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, p.cumulative_review
-							 FROM products p
-							 LEFT JOIN (
-							   SELECT product_refer, MIN(created_at) AS min_created_at
-							   FROM product_images
-							   GROUP BY product_refer
-							 ) pi_min ON p.id = pi_min.product_refer
-							 LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-							 WHERE p.deleted_at IS NULL and p.category_refer = ?
-							 LIMIT 12`, category)
+				Query(`SELECT BIN_TO_UUID(p.id) AS id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') AS image, p.cumulative_review,
+					       COUNT(oi.id) AS sold_count
+					FROM products p
+					         LEFT JOIN (
+					    SELECT product_refer, MIN(created_at) AS min_created_at
+					    FROM product_images
+					    GROUP BY product_refer
+					) pi_min ON p.id = pi_min.product_refer
+					         LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
+					         LEFT JOIN order_items oi ON oi.product_refer = p.id
+					         LEFT JOIN orders o ON oi.order_refer = o.id
+					WHERE p.deleted_at IS NULL AND p.category_refer = ?
+					AND o.transaction_status = 'settlement' or o.transaction_status = 'capture'
+					GROUP BY p.id, p.name, p.price, image, p.cumulative_review
+					LIMIT 12;`, category)
 			if err != nil {
 				errChan <- err
 				return
@@ -198,7 +203,7 @@ func GetProduct(c *gin.Context) {
 			defer rows.Close()
 			for rows.Next() {
 				var product models.HomepageProduct
-				if err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating); err != nil {
+				if err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating, &product.Sold); err != nil {
 					errChan <- err
 					return
 				}

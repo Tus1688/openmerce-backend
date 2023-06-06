@@ -82,6 +82,7 @@ type HomepageProduct struct {
 	Price    uint    `json:"price"`
 	ImageUrl string  `json:"image"`
 	Rating   float64 `json:"rating"`
+	Sold     uint    `json:"sold"`
 }
 
 // ProductDetail is the model for product detail response (query by id)
