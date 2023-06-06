@@ -301,6 +301,8 @@ func Checkout(c *gin.Context) {
 		if err != nil {
 			log.Print(err)
 		}
+		// put updateCartCache after the delete query to make sure the cache is updated after the delete query
+		updateCartCache(customerId)
 	}()
 
 	// update the orders table and fill the payment_token and payment_redirect_url
@@ -313,7 +315,6 @@ func Checkout(c *gin.Context) {
 		}
 	}()
 
-	go updateCartCache(customerId)
 	c.JSON(200, paymentRes)
 }
 
