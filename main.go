@@ -110,6 +110,9 @@ func initRouter() *gin.Engine {
 			inventory.DELETE("/product", staffControllers.DeleteProduct)  // delete product and its images
 			inventory.DELETE("/product-2", staffControllers.DeleteImage)  // delete image only
 			inventory.PATCH("/product-1", staffControllers.UpdateProduct) // update product (without image)
+
+			inventory.GET("/order", staffControllers.GetOrder)
+			inventory.POST("/ship", staffControllers.ShipOrder)
 		}
 		// everything that related to global wide system settings
 		system := staffDashboard.Group("/system")

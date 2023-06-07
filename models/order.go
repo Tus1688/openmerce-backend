@@ -38,3 +38,10 @@ type AddressOrderResponse struct {
 	FullAddress   string `json:"full_address"`
 	ShippingArea  string `json:"shipping_area"`
 }
+
+type OrderResponseStaff struct {
+	OrderResponse
+	Shipped    bool `json:"shipped"`
+	Paid       bool `json:"paid,omitempty"`
+	NeedRefund bool `json:"need_refund,omitempty"`
+}
