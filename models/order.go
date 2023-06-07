@@ -15,6 +15,7 @@ type OrderDetailResponse struct {
 	ID                uint64                `json:"id"`
 	Status            string                `json:"status"`
 	StatusDescription string                `json:"status_description"`
+	PaymentType       string                `json:"payment_type"`
 	PaymentUrl        string                `json:"payment_url,omitempty"`
 	CreatedAt         string                `json:"created_at"`
 	ItemList          []ItemListOrderDetail `json:"item_list"`
