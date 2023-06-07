@@ -8,6 +8,7 @@ type OrderResponse struct {
 	ItemCount   uint8  `json:"item_count"`
 	Image       string `json:"image"`
 	ProductName string `json:"product_name"`
+	Reviewed    bool   `json:"reviewed"`
 }
 
 type OrderDetailResponse struct {

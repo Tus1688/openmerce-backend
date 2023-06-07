@@ -156,8 +156,9 @@ func GetOrder(c *gin.Context) {
 			       o.gross_amount,
 			       COALESCE(o.transaction_status, ''),
 			       oi.item_count,
-			       COALESCE(pi.image, ''),
-			       p.name
+			       MAX(COALESCE(pi.image, '')) AS image,
+			       p.name,
+			       IF(COUNT(r.order_item_refer) = oi.item_count, TRUE, FALSE) AS has_reviews
 			FROM orders o
 			         LEFT JOIN (
 			    SELECT order_refer, COUNT(*) AS item_count
@@ -176,7 +177,10 @@ func GetOrder(c *gin.Context) {
 			    SELECT id, name
 			    FROM products
 			) p ON p.id = (SELECT product_refer FROM order_items WHERE order_refer = o.id LIMIT 1)
-			WHERE o.customer_refer = UUID_TO_BIN(?);
+			         LEFT JOIN order_items oi2 ON oi2.order_refer = o.id
+			         LEFT JOIN reviews r ON r.order_item_refer = oi2.id
+			WHERE o.customer_refer = UUID_TO_BIN(?)
+			GROUP BY o.id, oi.item_count, p.name;
 			`, customerId)
 	if err != nil {
 		c.Status(500)
@@ -185,7 +189,7 @@ func GetOrder(c *gin.Context) {
 	defer rows.Close()
 	for rows.Next() {
 		var item models.OrderResponse
-		err := rows.Scan(&item.ID, &item.CreatedAt, &item.GrossAmount, &item.Status, &item.ItemCount, &item.Image, &item.ProductName)
+		err := rows.Scan(&item.ID, &item.CreatedAt, &item.GrossAmount, &item.Status, &item.ItemCount, &item.Image, &item.ProductName, &item.Reviewed)
 		if err != nil {
 			c.Status(500)
 			return
