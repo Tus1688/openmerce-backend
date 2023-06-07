@@ -88,6 +88,7 @@ func HandleNotifications(c *gin.Context) {
 	var request WebhookNotification
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.Status(400)
+		go logging.InsertLog(logging.ERROR, "midtrans webhook error: "+err.Error())
 		return
 	}
 	// verify the signature
@@ -109,7 +110,7 @@ func HandleNotifications(c *gin.Context) {
 		if request.FraudStatus != "deny" && request.FraudStatus != "challenge" {
 			// update the is_paid to true
 			_, err := database.MysqlInstance.
-				Exec("UPDATE orders SET is_paid = true, transaction_status = ? WHERE id = ?", request.TransactionStatus, OrderId)
+				Exec("UPDATE orders SET is_paid = true, transaction_status = ?, payment_type = ? WHERE id = ?", request.TransactionStatus, request.PaymentType, OrderId)
 			if err != nil {
 				go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 				// retry once
@@ -122,7 +123,7 @@ func HandleNotifications(c *gin.Context) {
 		// set the is_cancelled to true
 	} else if request.TransactionStatus == "cancel" || request.TransactionStatus == "deny" || request.TransactionStatus == "expire" {
 		_, err := database.MysqlInstance.
-			Exec("UPDATE orders SET is_cancelled = true, transaction_status = ? WHERE id = ?", request.TransactionStatus, OrderId)
+			Exec("UPDATE orders SET is_cancelled = true, transaction_status = ?, payment_type = ? WHERE id = ?", request.TransactionStatus, request.PaymentType, OrderId)
 		if err != nil {
 			go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 			// retry once
@@ -132,7 +133,7 @@ func HandleNotifications(c *gin.Context) {
 	} else {
 		// otherwise, update the transaction_status only
 		_, err := database.MysqlInstance.
-			Exec("UPDATE orders SET transaction_status = ? WHERE id = ?", request.TransactionStatus, OrderId)
+			Exec("UPDATE orders SET transaction_status = ?, payment_type = ? WHERE id = ?", request.TransactionStatus, request.PaymentType, OrderId)
 		if err != nil {
 			go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 			// retry once

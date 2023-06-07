@@ -148,6 +148,7 @@ CREATE TABLE orders(
     is_cancelled           BOOLEAN  DEFAULT FALSE,
     # need_refund is the flag to indicate whether the order is need to be refunded or not (if the quantity is not enough)
     need_refund            BOOLEAN  DEFAULT FALSE,
+    payment_type           VARCHAR(255) NULL,
     created_at             datetime DEFAULT CURRENT_TIMESTAMP,
     updated_at             datetime,
     deleted_at             datetime,
