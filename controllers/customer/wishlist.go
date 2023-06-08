@@ -113,15 +113,36 @@ func GetWishlist(c *gin.Context) {
 	//	return all wishlist if there is no query
 	rows, err := database.MysqlInstance.
 		Query(`
-				SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image
-				FROM wishlists w
-				         JOIN products p ON w.product_refer = p.id
-				         LEFT JOIN (SELECT product_refer, MIN(created_at) AS min_created_at
-				                    FROM product_images
-				                    GROUP BY product_refer) pi_min ON p.id = pi_min.product_refer
-				         LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-				WHERE w.customer_refer = UUID_TO_BIN(?)
-				  AND p.deleted_at IS NULL;
+			SELECT
+			    BIN_TO_UUID(p.id) AS id,
+			    p.name,
+			    p.price,
+			    COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') AS image,
+			    p.cumulative_review,
+			    COUNT(oi.id) AS sold_count
+			FROM
+			    wishlists w
+			    left join products p on p.id = w.product_refer
+			        LEFT JOIN (
+			        SELECT
+			            id,
+			            product_refer,
+			            ROW_NUMBER() OVER (PARTITION BY product_refer ORDER BY created_at) AS rn
+			        FROM
+			            product_images
+			    ) pi ON p.id = pi.product_refer AND pi.rn = 1
+			        LEFT JOIN
+			    order_items oi ON oi.product_refer = p.id
+			        LEFT JOIN
+			    orders o ON oi.order_refer = o.id
+			        AND (o.transaction_status = 'settlement'
+			            OR o.transaction_status = 'capture')
+			WHERE
+			    p.deleted_at IS NULL
+			AND w.customer_refer = UUID_TO_BIN(?)
+			GROUP BY
+			    p.id,
+			    image;
 			`, customerId)
 	if err != nil {
 		c.Status(500)
@@ -130,7 +151,7 @@ func GetWishlist(c *gin.Context) {
 	var response []models.WishlistItemResponse
 	for rows.Next() {
 		var item models.WishlistItemResponse
-		err := rows.Scan(&item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage)
+		err := rows.Scan(&item.ID, &item.Name, &item.Price, &item.ImageUrl, &item.Rating, &item.Sold)
 		if err != nil {
 			c.Status(500)
 			return
