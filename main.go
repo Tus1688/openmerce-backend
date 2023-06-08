@@ -157,6 +157,8 @@ func initRouter() *gin.Engine {
 
 		customerDashboard.GET("/profile", customerControllers.GetProfile)
 		customerDashboard.PATCH("/profile", customerControllers.UpdateProfile) // handle update profile (without password)
+
+		customerDashboard.PATCH("/creds", customerControllers.UpdatePassword) // handle update password
 	}
 
 	// global unprotected routes for public access
