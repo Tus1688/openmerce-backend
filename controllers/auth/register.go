@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"math/big"
 	"net/http"
+	"net/mail"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +32,12 @@ func RegisterEmail(c *gin.Context) {
 		c.Status(500)
 		return
 	}
+	// validate the email address
+	if _, err := mail.ParseAddress(request.Email); err != nil {
+		c.Status(400)
+		return
+	}
+
 	if email != "" {
 		c.JSON(409, gin.H{"error": "Email already registered"})
 		return
@@ -174,6 +181,11 @@ func CreateAccount(c *gin.Context) {
 	// validate the password
 	if !request.PasswordIsValid() {
 		c.JSON(400, gin.H{"error": "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"})
+		return
+	}
+	// validate the gender
+	if request.Gender != "male" && request.Gender != "female" {
+		c.Status(400)
 		return
 	}
 	// hash the password

@@ -154,6 +154,9 @@ func initRouter() *gin.Engine {
 
 		customerDashboard.POST("/order-review", customerControllers.CreateReview) // handle create review
 		customerDashboard.GET("/order-review", customerControllers.GetReview)     // get all review
+
+		customerDashboard.GET("/profile", customerControllers.GetProfile)
+		customerDashboard.PATCH("/profile", customerControllers.UpdateProfile) // handle update profile (without password)
 	}
 
 	// global unprotected routes for public access
