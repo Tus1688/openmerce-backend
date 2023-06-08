@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/Tus1688/openmerce-backend/database"
+	"github.com/Tus1688/openmerce-backend/logging"
 	"github.com/Tus1688/openmerce-backend/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -51,6 +52,7 @@ func AddNewProduct(c *gin.Context) {
 		QueryRow("SELECT BIN_TO_UUID(id) FROM products WHERE name = ? AND deleted_at IS NOT NULL", request.Name).
 		Scan(&existingProductID)
 	if err != nil && err != sql.ErrNoRows {
+		go logging.InsertLog(logging.ERROR, "1-exist:"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -64,6 +66,7 @@ func AddNewProduct(c *gin.Context) {
 				c.JSON(409, gin.H{"error": err.Error()})
 			} else {
 				c.Status(500)
+				go logging.InsertLog(logging.ERROR, "2-cat:"+err.Error())
 			}
 			return
 		}
@@ -76,6 +79,7 @@ func AddNewProduct(c *gin.Context) {
 				request.Description, request.Price, request.Weight, request.CategoryID, request.Length, request.Width, request.Height, existingProductID)
 		if err != nil {
 			c.Status(500)
+			go logging.InsertLog(logging.ERROR, "2-cat:"+err.Error())
 			return
 		}
 		id = existingProductID
@@ -91,6 +95,7 @@ func AddNewProduct(c *gin.Context) {
 				c.JSON(409, gin.H{"error": "Product name already exists"})
 				return
 			}
+			go logging.InsertLog(logging.ERROR, "3-insert:"+err.Error())
 			c.Status(500)
 			return
 		}
@@ -106,6 +111,7 @@ func AddNewProduct(c *gin.Context) {
 				id, request.InitialStock)
 	}
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "4-inventory:"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -131,27 +137,32 @@ func AddImage(c *gin.Context) {
 	image, err := request.Picture.Open()
 	if err != nil {
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "1-addimg:"+err.Error())
 		return
 	}
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("picture", request.Picture.Filename)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "2-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
 	_, err = io.Copy(part, image)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "3-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
 	err = writer.Close()
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "4-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "5-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -159,11 +170,13 @@ func AddImage(c *gin.Context) {
 	req.Header.Set("Authorization", NginxFSAuthorization)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "6-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 201 {
+		go logging.InsertLog(logging.ERROR, "7-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -172,6 +185,7 @@ func AddImage(c *gin.Context) {
 		File string `json:"file"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		go logging.InsertLog(logging.ERROR, "8-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -180,6 +194,7 @@ func AddImage(c *gin.Context) {
 		Exec("INSERT INTO product_images (id, product_refer) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?))",
 			strings.Replace(response.File, ".webp", "", 1), request.ProductID)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "9-addimg:"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -195,12 +210,14 @@ func DeleteProduct(c *gin.Context) {
 	//	try to delete the product by set deleted_at to current timestamp
 	res, err := database.MysqlInstance.Exec("UPDATE products SET deleted_at = CURRENT_TIMESTAMP WHERE id = UUID_TO_BIN(?) AND deleted_at IS NULL", request.ID)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "1-delprod"+err.Error())
 		c.Status(500)
 		return
 	}
 	//	check if the product exists
 	affected, err := res.RowsAffected()
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "2-delprod"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -212,6 +229,7 @@ func DeleteProduct(c *gin.Context) {
 	var imageUrls []string
 	rows, err := database.MysqlInstance.Query("SELECT BIN_TO_UUID(id) FROM product_images WHERE product_refer = UUID_TO_BIN(?)", request.ID)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "3-delprod"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -220,6 +238,7 @@ func DeleteProduct(c *gin.Context) {
 		var imageUrl string
 		if err := rows.Scan(&imageUrl); err != nil {
 			c.Status(500)
+			go logging.InsertLog(logging.ERROR, "4-delprod"+err.Error())
 			return
 		}
 		imageUrls = append(imageUrls, imageUrl)
@@ -287,6 +306,7 @@ func DeleteProduct(c *gin.Context) {
 	for err := range errChan {
 		if err != nil {
 			c.Status(500)
+			go logging.InsertLog(logging.ERROR, "5-delprod"+err.Error())
 			return
 		}
 	}
@@ -311,6 +331,7 @@ func DeleteImage(c *gin.Context) {
 			c.Status(404)
 			return
 		}
+		go logging.InsertLog(logging.ERROR, "1-delimg"+err.Error())
 		c.Status(500)
 		return
 	}
@@ -322,16 +343,19 @@ func DeleteImage(c *gin.Context) {
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	req.Header.Set("Authorization", NginxFSAuthorization)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "2-delimg"+err.Error())
 		c.Status(500)
 		return
 	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "3-delimg"+err.Error())
 		c.Status(500)
 		return
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 && res.StatusCode != 404 {
+		go logging.InsertLog(logging.ERROR, "4-delimg"+err.Error())
 		// 404 considered as success as it maybe deleted by other request
 		c.Status(500)
 		return
@@ -340,6 +364,7 @@ func DeleteImage(c *gin.Context) {
 	_, err = database.MysqlInstance.
 		Exec("DELETE FROM product_images WHERE id = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)", strings.Replace(request.FileName, ".webp", "", 1), request.ProductID)
 	if err != nil {
+		go logging.InsertLog(logging.ERROR, "5-delimg"+err.Error())
 		c.Status(500)
 		return
 	}
