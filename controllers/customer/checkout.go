@@ -269,7 +269,7 @@ func Checkout(c *gin.Context) {
 	for _, item := range items {
 		paymentReq.ItemDetails = append(paymentReq.ItemDetails, models.CheckoutItem{
 			Id:       item.Id,
-			Name:     item.Name,
+			Name:     item.Name[:50],
 			Price:    item.Price,
 			Quantity: item.Quantity,
 		})
