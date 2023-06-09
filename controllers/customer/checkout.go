@@ -267,9 +267,15 @@ func Checkout(c *gin.Context) {
 	}
 	// fill the paymentReq.ItemDetails
 	for _, item := range items {
+		var name string
+		if len(item.Name) > 50 {
+			name = item.Name[:50]
+		} else {
+			name = item.Name
+		}
 		paymentReq.ItemDetails = append(paymentReq.ItemDetails, models.CheckoutItem{
 			Id:       item.Id,
-			Name:     item.Name[:50],
+			Name:     name,
 			Price:    item.Price,
 			Quantity: item.Quantity,
 		})
