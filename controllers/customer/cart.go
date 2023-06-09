@@ -139,9 +139,12 @@ func GetCart(c *gin.Context) {
 			    p.name,
 			    p.price,
 			    COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') AS image,
-			    c.quantity
+			    c.quantity,
+			    i.quantity,
+			    c.checked
 			FROM cart_items c
 			        left join products p on p.id = c.product_refer
+			        left join inventories i on i.product_refer = c.product_refer
 			        LEFT JOIN (
 			        SELECT
 			            id,
