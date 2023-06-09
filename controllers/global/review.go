@@ -16,7 +16,18 @@ func GetReviewGlobal(c *gin.Context) {
 	// get the review
 	var reviews []models.ReviewResponseGlobal
 	rows, err := database.MysqlInstance.
-		Query("SELECT BIN_TO_UUID(r.id), r.rating, COALESCE(r.review, ''), DATE_FORMAT(o.created_at, '%d %M %Y') FROM reviews r LEFT JOIN order_items oi on r.order_item_refer = oi.id LEFT JOIN orders o on oi.order_refer = o.id WHERE r.product_refer = UUID_TO_BIN(?)", request.ID)
+		Query(`
+			SELECT BIN_TO_UUID(r.id),
+			       r.rating,
+			       COALESCE(r.review, ''),
+			       DATE_FORMAT(o.created_at, '%d %M %Y'),
+			       CONCAT(c.first_name, ' ', c.last_name)
+			FROM reviews r
+			         LEFT JOIN order_items oi on r.order_item_refer = oi.id
+			         LEFT JOIN orders o on oi.order_refer = o.id
+			         LEFT JOIN customers c on o.customer_refer = c.id
+			WHERE r.product_refer = UUID_TO_BIN(?)
+		`, request.ID)
 	if err != nil {
 		c.Status(500)
 		return
@@ -24,7 +35,7 @@ func GetReviewGlobal(c *gin.Context) {
 	defer rows.Close()
 	for rows.Next() {
 		var review models.ReviewResponseGlobal
-		err = rows.Scan(&review.ID, &review.Rating, &review.Review, &review.CreatedAt)
+		err = rows.Scan(&review.ID, &review.Rating, &review.Review, &review.CreatedAt, &review.Customer)
 		if err != nil {
 			c.Status(500)
 			return

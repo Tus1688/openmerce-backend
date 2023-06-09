@@ -22,4 +22,5 @@ type ReviewResponseGlobal struct {
 	Rating    uint8  `json:"rating"`
 	Review    string `json:"review"`
 	CreatedAt string `json:"created_at"`
+	Customer  string `json:"customer"`
 }
