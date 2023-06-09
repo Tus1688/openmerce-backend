@@ -145,16 +145,27 @@ func PreCheckoutItems(c *gin.Context) {
 	var response []models.PreCheckoutItem
 	rows, err := database.MysqlInstance.
 		Query(`
-			SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, c.quantity
+			SELECT
+			    BIN_TO_UUID(p.id) AS id,
+			    p.name,
+			    p.price,
+			    COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') AS image,
+			    c.quantity
 			FROM cart_items c
-			JOIN products p ON c.product_refer = p.id
-			LEFT JOIN (SELECT product_refer, MIN(created_at) AS min_created_at
-			FROM product_images
-			GROUP BY product_refer) pi_min ON p.id = pi_min.product_refer
-			LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-			LEFT JOIN inventories i on p.id = i.product_refer
-			WHERE c.customer_refer = UUID_TO_BIN(?) and c.checked = 1
-			AND p.deleted_at IS NULL AND c.quantity <= i.quantity
+			        left join products p on p.id = c.product_refer
+			        LEFT JOIN (
+			        SELECT
+			            id,
+			            product_refer,
+			            ROW_NUMBER() OVER (PARTITION BY product_refer ORDER BY created_at) AS rn
+			        FROM
+			            product_images
+			    ) pi ON p.id = pi.product_refer AND pi.rn = 1
+				LEFT JOIN inventories i ON i.product_refer = c.product_refer
+			WHERE
+			    p.deleted_at IS NULL
+			  AND c.customer_refer = UUID_TO_BIN(?) AND c.checked = 1
+						AND p.deleted_at IS NULL AND c.quantity <= i.quantity
 		`, customerId)
 	if err != nil {
 		c.Status(500)

@@ -133,16 +133,26 @@ func GetCart(c *gin.Context) {
 	customerId := claims.Uid
 	var response []models.CartItemResponse
 	rows, err := database.MysqlInstance.
-		Query(`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, c.quantity, i.quantity, c.checked
+		Query(`
+			SELECT
+			    BIN_TO_UUID(p.id) AS id,
+			    p.name,
+			    p.price,
+			    COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') AS image,
+			    c.quantity
 			FROM cart_items c
-			JOIN products p ON c.product_refer = p.id
-			JOIN inventories i ON p.id = i.product_refer
-			LEFT JOIN (SELECT product_refer, MIN(created_at) AS min_created_at
-			FROM product_images
-			GROUP BY product_refer) pi_min ON p.id = pi_min.product_refer
-			LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-			WHERE c.customer_refer = UUID_TO_BIN(?)
-			AND p.deleted_at IS NULL;
+			        left join products p on p.id = c.product_refer
+			        LEFT JOIN (
+			        SELECT
+			            id,
+			            product_refer,
+			            ROW_NUMBER() OVER (PARTITION BY product_refer ORDER BY created_at) AS rn
+			        FROM
+			            product_images
+			    ) pi ON p.id = pi.product_refer AND pi.rn = 1
+			WHERE
+			    p.deleted_at IS NULL
+			  AND c.customer_refer = UUID_TO_BIN(?);
 			`, customerId)
 	if err != nil {
 		c.Status(500)
