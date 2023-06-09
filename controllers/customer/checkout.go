@@ -3,7 +3,6 @@ package customer
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -128,6 +127,7 @@ func Checkout(c *gin.Context) {
 				return
 			} else {
 				c.Status(500)
+				go logging.InsertLog(logging.ERROR, "checkout1-"+err.Error())
 				return
 			}
 		}
@@ -141,6 +141,7 @@ func Checkout(c *gin.Context) {
 			return
 		}
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "checkout2-"+err.Error())
 		return
 	}
 	// serialize the freight response into the list of choices
@@ -204,6 +205,7 @@ func Checkout(c *gin.Context) {
 	tx, err := database.MysqlInstance.Begin()
 	if err != nil {
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "checkout3-"+err.Error())
 		return
 	}
 	// rollback the transaction if there is any error
@@ -215,11 +217,13 @@ func Checkout(c *gin.Context) {
 			VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?, ?, ?)`, customerId, request.AddressCode, request.CourierCode, freightCost, itemGrossAmount, itemGrossAmount+freightCost)
 	if err != nil {
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "checkout4-"+err.Error())
 		return
 	}
 	orderId, err := res.LastInsertId()
 	if err != nil {
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "checkout5-"+err.Error())
 		return
 	}
 	// insert the order items into the database
@@ -230,6 +234,7 @@ func Checkout(c *gin.Context) {
 		`)
 	if err != nil {
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "checkout6-"+err.Error())
 		return
 	}
 	defer stmt.Close()
@@ -237,6 +242,7 @@ func Checkout(c *gin.Context) {
 		_, err := stmt.Exec(orderId, item.Id, item.Name, item.Description, item.Price, item.Weight, item.Quantity)
 		if err != nil {
 			c.Status(500)
+			go logging.InsertLog(logging.ERROR, "checkout7-"+err.Error())
 			return
 		}
 	}
@@ -249,6 +255,7 @@ func Checkout(c *gin.Context) {
 	for err := range errChan {
 		if err != nil {
 			c.Status(500)
+			go logging.InsertLog(logging.ERROR, "checkout8-"+err.Error())
 			return
 		}
 	}
@@ -286,12 +293,14 @@ func Checkout(c *gin.Context) {
 	paymentRes, err := paymentReq.CreatePayment()
 	if err != nil {
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "checkout9-"+err.Error())
 		return
 	}
 
 	// commit the transaction
 	if err := tx.Commit(); err != nil {
 		c.Status(500)
+		go logging.InsertLog(logging.ERROR, "checkout10-"+err.Error())
 		return
 	}
 
@@ -299,7 +308,7 @@ func Checkout(c *gin.Context) {
 	go func() {
 		_, err := database.MysqlInstance.Exec("DELETE FROM cart_items WHERE customer_refer = UUID_TO_BIN(?) AND checked = 1", customerId)
 		if err != nil {
-			log.Print(err)
+			go logging.InsertLog(logging.ERROR, "checkout11-"+err.Error())
 		}
 		// put updateCartCache after the delete query to make sure the cache is updated after the delete query
 		updateCartCache(customerId)
@@ -311,7 +320,7 @@ func Checkout(c *gin.Context) {
 		_, err := database.MysqlInstance.Exec("UPDATE orders SET payment_token = ?, payment_redirect_url = ? WHERE id = ?",
 			paymentRes.Token, paymentRes.RedirectUrl, orderId)
 		if err != nil {
-			log.Print(err)
+			go logging.InsertLog(logging.ERROR, "checkout12-"+err.Error())
 		}
 	}()
 
