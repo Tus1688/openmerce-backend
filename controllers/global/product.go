@@ -86,15 +86,32 @@ func GetProduct(c *gin.Context) {
 
 	if err := c.ShouldBindQuery(&requestSearch); err == nil {
 		sqlQuery :=
-			`SELECT BIN_TO_UUID(p.id) as id, p.name, p.price, COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') as image, p.cumulative_review
-			 FROM products p
-			 LEFT JOIN (
-			 	SELECT product_refer, MIN(created_at) AS min_created_at
-			 FROM product_images
-			 GROUP BY product_refer
-			 ) pi_min ON p.id = pi_min.product_refer
-			 LEFT JOIN product_images pi ON pi.product_refer = p.id AND pi.created_at = pi_min.min_created_at
-			 WHERE p.deleted_at IS NULL AND MATCH(p.name) AGAINST(? IN BOOLEAN MODE)`
+			`
+			SELECT
+			    BIN_TO_UUID(p.id) AS id,
+			    p.name,
+			    p.price,
+			    COALESCE(CONCAT(BIN_TO_UUID(pi.id), '.webp'), '') AS image,
+			    p.cumulative_review,
+			    COUNT(oi.id) AS sold_count
+			FROM
+			    products p
+			        LEFT JOIN (
+			        SELECT
+			            id,
+			            product_refer,
+			            ROW_NUMBER() OVER (PARTITION BY product_refer ORDER BY created_at) AS rn
+			        FROM
+			            product_images
+			    ) pi ON p.id = pi.product_refer AND pi.rn = 1
+			        LEFT JOIN
+			    order_items oi ON oi.product_refer = p.id
+			        LEFT JOIN
+			    orders o ON oi.order_refer = o.id
+			        AND (o.transaction_status = 'settlement'
+			            OR o.transaction_status = 'capture')
+			WHERE
+			    p.deleted_at IS NULL AND MATCH(p.name) AGAINST(? IN BOOLEAN MODE)`
 		args := []interface{}{requestSearch.Search + "*"}
 		category := c.Query("category")
 		if category != "" {
@@ -111,6 +128,7 @@ func GetProduct(c *gin.Context) {
 			sqlQuery += " AND price <= ?"
 			args = append(args, priceTo)
 		}
+		sqlQuery += " GROUP BY p.id, image"
 		limit := c.Query("limit")
 		if limit != "" {
 			sqlQuery += " LIMIT ?"
@@ -125,7 +143,7 @@ func GetProduct(c *gin.Context) {
 		defer rows.Close()
 		for rows.Next() {
 			var product models.HomepageProduct
-			if err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating); err != nil {
+			if err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating, &product.Sold); err != nil {
 				c.Status(500)
 				return
 			}
