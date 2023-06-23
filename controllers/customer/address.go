@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package customer
 
 import (
@@ -25,8 +45,11 @@ func AddAddress(c *gin.Context) {
 	}
 	customerId := claims.Uid
 	_, err = database.MysqlInstance.
-		Exec("INSERT INTO customer_addresses (customer_refer, label, full_address, note, recipient_name, phone_number, shipping_area_refer, postal_code) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?)",
-			customerId, request.Label, request.FullAddress, request.Note, request.RecipientName, request.PhoneNumber, request.ShippingArea, request.PostalCode)
+		Exec(
+			"INSERT INTO customer_addresses (customer_refer, label, full_address, note, recipient_name, phone_number, shipping_area_refer, postal_code) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?)",
+			customerId, request.Label, request.FullAddress, request.Note, request.RecipientName, request.PhoneNumber,
+			request.ShippingArea, request.PostalCode,
+		)
 	if err != nil {
 		if strings.Contains(err.Error(), "shipping_area_refer") {
 			c.JSON(409, gin.H{"error": "shipping area not found"})
@@ -54,12 +77,17 @@ func GetAddress(c *gin.Context) {
 	var request models.APICommonQueryUUID
 	if err := c.ShouldBindQuery(&request); err == nil {
 		var response models.AddressResponseDetail
-		err := database.MysqlInstance.QueryRow(`
+		err := database.MysqlInstance.QueryRow(
+			`
 					select BIN_TO_UUID(c.id), c.label, c.full_address, c.note, c.recipient_name, c.phone_number, s.full_name, s.id, c.postal_code
 					from customer_addresses c, shipping_areas s
 					where c.shipping_area_refer = s.id and c.customer_refer = UUID_TO_BIN(?) and c.id = UUID_TO_BIN(?)
-					`, customerId, request.ID).
-			Scan(&response.ID, &response.Label, &response.FullAddress, &response.Note, &response.RecipientName, &response.PhoneNumber, &response.ShippingArea, &response.AreaID, &response.PostalCode)
+					`, customerId, request.ID,
+		).
+			Scan(
+				&response.ID, &response.Label, &response.FullAddress, &response.Note, &response.RecipientName,
+				&response.PhoneNumber, &response.ShippingArea, &response.AreaID, &response.PostalCode,
+			)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.Status(404)
@@ -77,7 +105,10 @@ func GetAddress(c *gin.Context) {
 	}
 	// if there is no query string, return all addresses
 	rows, err := database.MysqlInstance.
-		Query("SELECT BIN_TO_UUID(id), label, full_address, note, recipient_name, phone_number FROM customer_addresses WHERE customer_refer = UUID_TO_BIN(?)", customerId)
+		Query(
+			"SELECT BIN_TO_UUID(id), label, full_address, note, recipient_name, phone_number FROM customer_addresses WHERE customer_refer = UUID_TO_BIN(?)",
+			customerId,
+		)
 	if err != nil {
 		c.Status(500)
 		return
@@ -85,7 +116,9 @@ func GetAddress(c *gin.Context) {
 	var response []models.AddressResponse
 	for rows.Next() {
 		var row models.AddressResponse
-		if err := rows.Scan(&row.ID, &row.Label, &row.FullAddress, &row.Note, &row.RecipientName, &row.PhoneNumber); err != nil {
+		if err := rows.Scan(
+			&row.ID, &row.Label, &row.FullAddress, &row.Note, &row.RecipientName, &row.PhoneNumber,
+		); err != nil {
 			c.Status(500)
 			return
 		}
@@ -113,7 +146,10 @@ func DeleteAddress(c *gin.Context) {
 	}
 	customerId := claims.Uid
 	res, err := database.MysqlInstance.
-		Exec("DELETE FROM customer_addresses WHERE customer_refer = UUID_TO_BIN(?) AND id = UUID_TO_BIN(?)", customerId, request.ID)
+		Exec(
+			"DELETE FROM customer_addresses WHERE customer_refer = UUID_TO_BIN(?) AND id = UUID_TO_BIN(?)", customerId,
+			request.ID,
+		)
 	if err != nil {
 		// 1451 = foreign key constraint
 		if strings.Contains(err.Error(), "1451") {

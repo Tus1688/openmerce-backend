@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package customer
 
 import (
@@ -22,11 +42,16 @@ func GetProfile(c *gin.Context) {
 	customerId := claims.Uid
 	var response models.CustomerProfile
 	err = database.MysqlInstance.
-		QueryRow(`
+		QueryRow(
+			`
 			SELECT email, COALESCE(phone_number, ''), first_name, last_name, birth_date, gender FROM customers
 			WHERE id = UUID_TO_BIN(?)
-		`, customerId).
-		Scan(&response.Email, &response.PhoneNumber, &response.FirstName, &response.LastName, &response.BirthDate, &response.Gender)
+		`, customerId,
+		).
+		Scan(
+			&response.Email, &response.PhoneNumber, &response.FirstName, &response.LastName, &response.BirthDate,
+			&response.Gender,
+		)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// this shouldn't happen as the customer who has the token should exist
@@ -140,7 +165,9 @@ func UpdatePassword(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	_, err = database.MysqlInstance.Exec("UPDATE customers SET hashed_password = ? WHERE id = UUID_TO_BIN(?)", request.NewPassword, customerId)
+	_, err = database.MysqlInstance.Exec(
+		"UPDATE customers SET hashed_password = ? WHERE id = UUID_TO_BIN(?)", request.NewPassword, customerId,
+	)
 	if err != nil {
 		c.Status(500)
 		return

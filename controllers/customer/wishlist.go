@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package customer
 
 import (
@@ -37,7 +57,10 @@ func AddToWishlist(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	_, err = database.MysqlInstance.Exec("INSERT INTO wishlists (product_refer, customer_refer) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?))", request.ID, customerId)
+	_, err = database.MysqlInstance.Exec(
+		"INSERT INTO wishlists (product_refer, customer_refer) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?))", request.ID,
+		customerId,
+	)
 	if err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			c.JSON(409, gin.H{"error": "product already in wishlist"})
@@ -63,7 +86,10 @@ func DeleteWishlist(c *gin.Context) {
 		return
 	}
 	customerId := claims.Uid
-	res, err := database.MysqlInstance.Exec("DELETE FROM wishlists WHERE product_refer = UUID_TO_BIN(?) AND customer_refer = UUID_TO_BIN(?)", request.ID, customerId)
+	res, err := database.MysqlInstance.Exec(
+		"DELETE FROM wishlists WHERE product_refer = UUID_TO_BIN(?) AND customer_refer = UUID_TO_BIN(?)", request.ID,
+		customerId,
+	)
 	if err != nil {
 		c.Status(500)
 		return
@@ -94,7 +120,10 @@ func GetWishlist(c *gin.Context) {
 	if err := c.ShouldBindQuery(&request); err == nil {
 		var exists uint8
 		err = database.MysqlInstance.
-			QueryRow("SELECT 1 FROM wishlists WHERE product_refer = UUID_TO_BIN(?) AND customer_refer = UUID_TO_BIN(?)", request.ID, customerId).
+			QueryRow(
+				"SELECT 1 FROM wishlists WHERE product_refer = UUID_TO_BIN(?) AND customer_refer = UUID_TO_BIN(?)",
+				request.ID, customerId,
+			).
 			Scan(&exists)
 		if err != nil && err != sql.ErrNoRows {
 			c.Status(500)
@@ -112,7 +141,8 @@ func GetWishlist(c *gin.Context) {
 	}
 	//	return all wishlist if there is no query
 	rows, err := database.MysqlInstance.
-		Query(`
+		Query(
+			`
 			SELECT
 			    BIN_TO_UUID(p.id) AS id,
 			    p.name,
@@ -143,7 +173,8 @@ func GetWishlist(c *gin.Context) {
 			GROUP BY
 			    p.id,
 			    image;
-			`, customerId)
+			`, customerId,
+		)
 	if err != nil {
 		c.Status(500)
 		return

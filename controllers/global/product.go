@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package global
 
 import (
@@ -24,7 +44,10 @@ func GetProductSold(c *gin.Context) {
 	// if there is no cache, get the count from database
 	if err != nil {
 		err := database.MysqlInstance.
-			QueryRow("SELECT SUM(quantity) FROM order_items oi LEFT JOIN orders o on oi.order_refer = o.id WHERE oi.product_refer = UUID_TO_BIN(?) AND o.is_paid = 1 AND o.transaction_status = 'settlement' OR o.transaction_status = 'capture' GROUP BY product_refer", request.ID).
+			QueryRow(
+				"SELECT SUM(quantity) FROM order_items oi LEFT JOIN orders o on oi.order_refer = o.id WHERE oi.product_refer = UUID_TO_BIN(?) AND o.is_paid = 1 AND o.transaction_status = 'settlement' OR o.transaction_status = 'capture' GROUP BY product_refer",
+				request.ID,
+			).
 			Scan(&count)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -52,10 +75,16 @@ func GetProduct(c *gin.Context) {
 	if err := c.ShouldBindQuery(&requestID); err == nil {
 		var response models.ProductDetail
 
-		err := database.MysqlInstance.QueryRow(`
+		err := database.MysqlInstance.QueryRow(
+			`
 			SELECT BIN_TO_UUID(p.id), p.name, p.description, p.price, p.weight, c.name, p.cumulative_review, CONCAT(p.length, ' x ', p.width, ' x ', p.height), i.quantity FROM products p, categories c, inventories i
-			WHERE p.category_refer = c.id AND p.deleted_at IS NULL AND p.id = UUID_TO_BIN(?) AND p.id = i.product_refer`, requestID.ID).
-			Scan(&response.ID, &response.Name, &response.Description, &response.Price, &response.Weight, &response.CategoryName, &response.CumulativeReview, &response.Dimension, &response.Stock)
+			WHERE p.category_refer = c.id AND p.deleted_at IS NULL AND p.id = UUID_TO_BIN(?) AND p.id = i.product_refer`,
+			requestID.ID,
+		).
+			Scan(
+				&response.ID, &response.Name, &response.Description, &response.Price, &response.Weight,
+				&response.CategoryName, &response.CumulativeReview, &response.Dimension, &response.Stock,
+			)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.Status(404)
@@ -64,8 +93,10 @@ func GetProduct(c *gin.Context) {
 			c.Status(500)
 			return
 		}
-		rows, err := database.MysqlInstance.Query(`
-		SELECT CONCAT(BIN_TO_UUID(id), '.webp') FROM product_images WHERE product_refer = UUID_TO_BIN(?)`, requestID.ID)
+		rows, err := database.MysqlInstance.Query(
+			`
+		SELECT CONCAT(BIN_TO_UUID(id), '.webp') FROM product_images WHERE product_refer = UUID_TO_BIN(?)`, requestID.ID,
+		)
 		if err != nil {
 			c.Status(500)
 			return
@@ -143,7 +174,9 @@ func GetProduct(c *gin.Context) {
 		defer rows.Close()
 		for rows.Next() {
 			var product models.HomepageProduct
-			if err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating, &product.Sold); err != nil {
+			if err := rows.Scan(
+				&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating, &product.Sold,
+			); err != nil {
 				c.Status(500)
 				return
 			}
@@ -191,7 +224,9 @@ func GetProduct(c *gin.Context) {
 			defer wg.Done()
 			var chunk models.HomepageProductResponse
 			//	get category detail
-			err := database.MysqlInstance.QueryRow("SELECT id, name, description FROM categories WHERE id =?", category).
+			err := database.MysqlInstance.QueryRow(
+				"SELECT id, name, description FROM categories WHERE id =?", category,
+			).
 				Scan(&chunk.CategoryID, &chunk.CategoryName, &chunk.CategoryDesc)
 			if err != nil {
 				errChan <- err
@@ -199,7 +234,8 @@ func GetProduct(c *gin.Context) {
 			}
 			//  get products in the category
 			rows, err := database.MysqlInstance.
-				Query(`
+				Query(
+					`
 					SELECT
 					    BIN_TO_UUID(p.id) AS id,
 					    p.name,
@@ -229,7 +265,8 @@ func GetProduct(c *gin.Context) {
 					GROUP BY
 					    p.id,
 					    image
-					LIMIT 12;`, category)
+					LIMIT 12;`, category,
+				)
 			if err != nil {
 				errChan <- err
 				return
@@ -237,7 +274,9 @@ func GetProduct(c *gin.Context) {
 			defer rows.Close()
 			for rows.Next() {
 				var product models.HomepageProduct
-				if err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating, &product.Sold); err != nil {
+				if err := rows.Scan(
+					&product.ID, &product.Name, &product.Price, &product.ImageUrl, &product.Rating, &product.Sold,
+				); err != nil {
 					errChan <- err
 					return
 				}

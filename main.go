@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package main
 
 import (
@@ -65,12 +85,18 @@ func initRouter() *gin.Engine {
 	customerAuth := router.Group("/api/v1/auth") // customer authentication are unprotected by any middleware
 	{
 		// user is unauthenticated
-		customerAuth.POST("/register-1", authControllers.RegisterEmail)        // user get a verification code and retrieve httpOnly cookie with jwt token of the inputted email
-		customerAuth.POST("/register-2", authControllers.RegisterEmailConfirm) // user input the verification code and the jwt token to confirm the email
-		customerAuth.POST("/register-3", authControllers.CreateAccount)        // user input everything else to create an account
-		customerAuth.POST("/login", authControllers.LoginCustomer)             // user login with email and password
-		customerAuth.GET("/refresh", authControllers.RefreshTokenCustomer)     // user refresh the token
-		customerAuth.POST("/logout", authControllers.LogoutCustomer)           // user logout
+		customerAuth.POST(
+			"/register-1", authControllers.RegisterEmail,
+		) // user get a verification code and retrieve httpOnly cookie with jwt token of the inputted email
+		customerAuth.POST(
+			"/register-2", authControllers.RegisterEmailConfirm,
+		) // user input the verification code and the jwt token to confirm the email
+		customerAuth.POST(
+			"/register-3", authControllers.CreateAccount,
+		) // user input everything else to create an account
+		customerAuth.POST("/login", authControllers.LoginCustomer)         // user login with email and password
+		customerAuth.GET("/refresh", authControllers.RefreshTokenCustomer) // user refresh the token
+		customerAuth.POST("/logout", authControllers.LogoutCustomer)       // user logout
 	}
 
 	staffAuth := router.Group("/api/v1/staff/auth")
@@ -130,15 +156,25 @@ func initRouter() *gin.Engine {
 	customerDashboard.Use(middlewares.TokenExpiredCustomer(3))
 	{
 		customerDashboard.GET("/cart", customerControllers.GetCart)
-		customerDashboard.POST("/cart", customerControllers.AddToCart)                    // also handle update cart
-		customerDashboard.DELETE("/cart", customerControllers.DeleteCart)                 // delete cart item based on product id
-		customerDashboard.POST("/cart-checked", customerControllers.CheckCartItem)        // handle ticked cart item to be checked out
-		customerDashboard.POST("/cart-checked-all", customerControllers.CheckAllCartItem) // handle ticked all item in cart to be checked out
-		customerDashboard.GET("/cart-count", customerControllers.GetCartCount)            // get cart count (for cart badge)
+		customerDashboard.POST("/cart", customerControllers.AddToCart) // also handle update cart
+		customerDashboard.DELETE(
+			"/cart", customerControllers.DeleteCart,
+		) // delete cart item based on product id
+		customerDashboard.POST(
+			"/cart-checked", customerControllers.CheckCartItem,
+		) // handle ticked cart item to be checked out
+		customerDashboard.POST(
+			"/cart-checked-all", customerControllers.CheckAllCartItem,
+		) // handle ticked all item in cart to be checked out
+		customerDashboard.GET(
+			"/cart-count", customerControllers.GetCartCount,
+		) // get cart count (for cart badge)
 
 		customerDashboard.GET("/wishlist", customerControllers.GetWishlist)
-		customerDashboard.POST("/wishlist", customerControllers.AddToWishlist)    // does not handle update wishlist
-		customerDashboard.DELETE("/wishlist", customerControllers.DeleteWishlist) // delete wishlist item based on product id
+		customerDashboard.POST("/wishlist", customerControllers.AddToWishlist) // does not handle update wishlist
+		customerDashboard.DELETE(
+			"/wishlist", customerControllers.DeleteWishlist,
+		) // delete wishlist item based on product id
 
 		customerDashboard.GET("/address", customerControllers.GetAddress)       // get all address
 		customerDashboard.POST("/address", customerControllers.AddAddress)      // handle add new address
@@ -148,8 +184,10 @@ func initRouter() *gin.Engine {
 		customerDashboard.GET("/pre-freight", customerControllers.PreCheckoutFreight) // get pre checkout freight cost
 		customerDashboard.GET("/pre-items", customerControllers.PreCheckoutItems)     // get pre checkout item list
 
-		customerDashboard.POST("/checkout", customerControllers.Checkout)         // handle checkout
-		customerDashboard.DELETE("/checkout", customerControllers.CancelCheckout) // handle cancel checkout (before payment)
+		customerDashboard.POST("/checkout", customerControllers.Checkout) // handle checkout
+		customerDashboard.DELETE(
+			"/checkout", customerControllers.CancelCheckout,
+		) // handle cancel checkout (before payment)
 
 		customerDashboard.GET("/order", customerControllers.GetOrder) // get all order
 
@@ -157,7 +195,9 @@ func initRouter() *gin.Engine {
 		customerDashboard.GET("/order-review", customerControllers.GetReview)     // get all review
 
 		customerDashboard.GET("/profile", customerControllers.GetProfile)
-		customerDashboard.PATCH("/profile", customerControllers.UpdateProfile) // handle update profile (without password)
+		customerDashboard.PATCH(
+			"/profile", customerControllers.UpdateProfile,
+		) // handle update profile (without password)
 
 		customerDashboard.PATCH("/creds", customerControllers.UpdatePassword) // handle update password
 	}

@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package customer
 
 import (
@@ -45,7 +65,10 @@ func Checkout(c *gin.Context) {
 		defer wg.Done()
 		var id uint32
 		err = database.MysqlInstance.
-			QueryRow("SELECT shipping_area_refer FROM customer_addresses WHERE id = UUID_TO_BIN(?) AND customer_refer = UUID_TO_BIN(?)", request.AddressCode, customerId).
+			QueryRow(
+				"SELECT shipping_area_refer FROM customer_addresses WHERE id = UUID_TO_BIN(?) AND customer_refer = UUID_TO_BIN(?)",
+				request.AddressCode, customerId,
+			).
 			Scan(&id)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -65,14 +88,16 @@ func Checkout(c *gin.Context) {
 		defer wg.Done()
 		var weight, volume float64
 		err = database.MysqlInstance.
-			QueryRow(`
+			QueryRow(
+				`
 				select sum(p.weight * c.quantity) as weight, sum((p.length * p.height * p.width) * c.quantity) as volume, sum(c.quantity * p.price) as gross_amount
 				from products p, cart_items c
 				left join inventories i on c.product_refer = i.product_refer
 				where p.id = c.product_refer and c.checked = 1 and c.customer_refer = uuid_to_bin(?) and 
 					c.quantity <= i.quantity and p.deleted_at is null
 				group by c.customer_refer;
-				`, customerId).Scan(&weight, &volume, &itemGrossAmount)
+				`, customerId,
+			).Scan(&weight, &volume, &itemGrossAmount)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				errChan <- fmt.Errorf("you haven't selected any item in the cart")
@@ -91,12 +116,14 @@ func Checkout(c *gin.Context) {
 	go func() {
 		defer wg.Done()
 		rows, err := database.MysqlInstance.
-			Query(`
+			Query(
+				`
 				select BIN_TO_UUID(p.id), p.name, p.price, c.quantity, p.description, p.weight
 				from products p, cart_items c
 				left join inventories i on c.product_refer = i.product_refer
 				where p.id = c.product_refer and c.customer_refer = UUID_TO_BIN(?)
-				and c.checked = 1 and c.quantity <= i.quantity and p.deleted_at is null`, customerId)
+				and c.checked = 1 and c.quantity <= i.quantity and p.deleted_at is null`, customerId,
+			)
 		if err != nil {
 			errChan <- err
 			return
@@ -147,22 +174,26 @@ func Checkout(c *gin.Context) {
 	// serialize the freight response into the list of choices
 	var freightChoices []models.PreCheckoutFreight
 	for _, value := range freightRes.Anteraja {
-		freightChoices = append(freightChoices, models.PreCheckoutFreight{
-			ProductCode: "anteraja-" + value.ProductCode,
-			CourierName: "anteraja",
-			ProductName: value.ProductName,
-			Etd:         value.Etd,
-			Rates:       value.Rates,
-		})
+		freightChoices = append(
+			freightChoices, models.PreCheckoutFreight{
+				ProductCode: "anteraja-" + value.ProductCode,
+				CourierName: "anteraja",
+				ProductName: value.ProductName,
+				Etd:         value.Etd,
+				Rates:       value.Rates,
+			},
+		)
 	}
 	for _, value := range freightRes.Sicepat {
-		freightChoices = append(freightChoices, models.PreCheckoutFreight{
-			ProductCode: "sicepat-" + value.ProductCode,
-			CourierName: "sicepat",
-			ProductName: value.ProductName,
-			Etd:         value.Etd,
-			Rates:       value.Rates,
-		})
+		freightChoices = append(
+			freightChoices, models.PreCheckoutFreight{
+				ProductCode: "sicepat-" + value.ProductCode,
+				CourierName: "sicepat",
+				ProductName: value.ProductName,
+				Etd:         value.Etd,
+				Rates:       value.Rates,
+			},
+		)
 	}
 
 	var freightCost int
@@ -187,7 +218,10 @@ func Checkout(c *gin.Context) {
 		defer wg.Done()
 		var firstName, lastName, email, phone string
 		err = database.MysqlInstance.
-			QueryRow("SELECT first_name, last_name, email, coalesce(phone_number, '') FROM customers WHERE id = UUID_TO_BIN(?)", customerId).
+			QueryRow(
+				"SELECT first_name, last_name, email, coalesce(phone_number, '') FROM customers WHERE id = UUID_TO_BIN(?)",
+				customerId,
+			).
 			Scan(&firstName, &lastName, &email, &phone)
 		if err != nil {
 			errChan <- err
@@ -212,9 +246,12 @@ func Checkout(c *gin.Context) {
 	defer tx.Rollback()
 	// insert the order first into the database
 	res, err := tx.
-		Exec(`
+		Exec(
+			`
 			INSERT INTO orders (customer_refer, customer_address_refer, courier_code, freight_cost, item_cost, gross_amount)
-			VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?, ?, ?)`, customerId, request.AddressCode, request.CourierCode, freightCost, itemGrossAmount, itemGrossAmount+freightCost)
+			VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?, ?, ?)`, customerId, request.AddressCode, request.CourierCode,
+			freightCost, itemGrossAmount, itemGrossAmount+freightCost,
+		)
 	if err != nil {
 		c.Status(500)
 		go logging.InsertLog(logging.ERROR, "checkout4-"+err.Error())
@@ -228,10 +265,12 @@ func Checkout(c *gin.Context) {
 	}
 	// insert the order items into the database
 	stmt, err := tx.
-		Prepare(`
+		Prepare(
+			`
 			INSERT INTO order_items(order_refer, product_refer, on_buy_name, on_buy_description, on_buy_price, on_buy_weight, quantity)
 			VALUES (?, UUID_TO_BIN(?), ?, ?, ?, ?, ?)
-		`)
+		`,
+		)
 	if err != nil {
 		c.Status(500)
 		go logging.InsertLog(logging.ERROR, "checkout6-"+err.Error())
@@ -273,19 +312,23 @@ func Checkout(c *gin.Context) {
 		} else {
 			name = item.Name
 		}
-		paymentReq.ItemDetails = append(paymentReq.ItemDetails, models.CheckoutItem{
-			Id:       item.Id,
-			Name:     name,
-			Price:    item.Price,
-			Quantity: item.Quantity,
-		})
+		paymentReq.ItemDetails = append(
+			paymentReq.ItemDetails, models.CheckoutItem{
+				Id:       item.Id,
+				Name:     name,
+				Price:    item.Price,
+				Quantity: item.Quantity,
+			},
+		)
 	}
-	paymentReq.ItemDetails = append(paymentReq.ItemDetails, models.CheckoutItem{
-		Id:       "freight-" + midtrans.BaseOrderId + "-" + strconv.FormatInt(orderId, 10),
-		Name:     request.CourierCode,
-		Price:    freightCost,
-		Quantity: 1,
-	})
+	paymentReq.ItemDetails = append(
+		paymentReq.ItemDetails, models.CheckoutItem{
+			Id:       "freight-" + midtrans.BaseOrderId + "-" + strconv.FormatInt(orderId, 10),
+			Name:     request.CourierCode,
+			Price:    freightCost,
+			Quantity: 1,
+		},
+	)
 	// already filled the customer's details above
 	// set the expiry time into 1 day
 	paymentReq.Expiry = midtrans.Expiry{
@@ -312,7 +355,9 @@ func Checkout(c *gin.Context) {
 
 	// delete the item in the cart
 	go func() {
-		_, err := database.MysqlInstance.Exec("DELETE FROM cart_items WHERE customer_refer = UUID_TO_BIN(?) AND checked = 1", customerId)
+		_, err := database.MysqlInstance.Exec(
+			"DELETE FROM cart_items WHERE customer_refer = UUID_TO_BIN(?) AND checked = 1", customerId,
+		)
 		if err != nil {
 			go logging.InsertLog(logging.ERROR, "checkout11-"+err.Error())
 		}
@@ -323,8 +368,10 @@ func Checkout(c *gin.Context) {
 	// update the orders table and fill the payment_token and payment_redirect_url
 	// we run this on another goroutine because the user will be redirected to the payment page and we don't want to wait for this to finish
 	go func() {
-		_, err := database.MysqlInstance.Exec("UPDATE orders SET payment_token = ?, payment_redirect_url = ? WHERE id = ?",
-			paymentRes.Token, paymentRes.RedirectUrl, orderId)
+		_, err := database.MysqlInstance.Exec(
+			"UPDATE orders SET payment_token = ?, payment_redirect_url = ? WHERE id = ?",
+			paymentRes.Token, paymentRes.RedirectUrl, orderId,
+		)
 		if err != nil {
 			go logging.InsertLog(logging.ERROR, "checkout12-"+err.Error())
 		}
@@ -349,7 +396,10 @@ func CancelCheckout(c *gin.Context) {
 	customerId := claims.Uid
 	var state string
 	err = database.MysqlInstance.
-		QueryRow("SELECT COALESCE(transaction_status, '') FROM orders WHERE id = ? AND customer_refer = UUID_TO_BIN(?) AND is_paid = 0 AND is_cancelled = 0", request.ID, customerId).
+		QueryRow(
+			"SELECT COALESCE(transaction_status, '') FROM orders WHERE id = ? AND customer_refer = UUID_TO_BIN(?) AND is_paid = 0 AND is_cancelled = 0",
+			request.ID, customerId,
+		).
 		Scan(&state)
 	if err != nil {
 		// if there is no row it means the order id is not exist for the current customer
@@ -364,7 +414,10 @@ func CancelCheckout(c *gin.Context) {
 	// and the midtrans haven't created the transaction
 	if state == "" {
 		// only set the is_cancelled to 1
-		_, err := database.MysqlInstance.Exec("UPDATE orders SET is_cancelled = 1, transaction_status = 'cancel', status_description = 'customer request for cancel' WHERE id = ? AND customer_refer = UUID_TO_BIN(?)", request.ID, customerId)
+		_, err := database.MysqlInstance.Exec(
+			"UPDATE orders SET is_cancelled = 1, transaction_status = 'cancel', status_description = 'customer request for cancel' WHERE id = ? AND customer_refer = UUID_TO_BIN(?)",
+			request.ID, customerId,
+		)
 		if err != nil {
 			c.Status(500)
 			return
@@ -374,13 +427,19 @@ func CancelCheckout(c *gin.Context) {
 	}
 	// suppose the transaction_status already filled and the transaction already created in midtrans, we need to cancel the transaction first in midtrans
 	if err := midtrans.DeleteOrder(strconv.Itoa(request.ID)); err != nil {
-		go logging.InsertLog(logging.ERROR, "cancel checkout unable to cancel the transaction in midtrans, order id:"+strconv.Itoa(request.ID)+"err :"+err.Error())
+		go logging.InsertLog(
+			logging.ERROR,
+			"cancel checkout unable to cancel the transaction in midtrans, order id:"+strconv.Itoa(request.ID)+"err :"+err.Error(),
+		)
 		c.Status(500)
 		return
 	}
 	// set the transaction status to pending cancel as we need to wait for the midtrans to completely cancel the transaction
 	_, err = database.MysqlInstance.
-		Exec("UPDATE orders SET transaction_status = 'pending cancel', status_description = 'customer request for cancel' WHERE id = ? AND customer_refer = UUID_TO_BIN(?)", request.ID, customerId)
+		Exec(
+			"UPDATE orders SET transaction_status = 'pending cancel', status_description = 'customer request for cancel' WHERE id = ? AND customer_refer = UUID_TO_BIN(?)",
+			request.ID, customerId,
+		)
 	if err != nil {
 		c.Status(500)
 		return

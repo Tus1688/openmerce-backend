@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package customer
 
 import (
@@ -36,10 +56,15 @@ func GetOrder(c *gin.Context) {
 			var status, statusDescription, paymentType, paymentUrl, createdAt, courier, TrackingCode string
 			var itemCost, shippingCost, totalCost uint
 			err := database.MysqlInstance.
-				QueryRow(`SELECT id, coalesce(transaction_status, ''), coalesce(status_description, ''), COALESCE(payment_type, ''), payment_redirect_url, DATE_FORMAT(created_at, '%d %M %Y'),
+				QueryRow(
+					`SELECT id, coalesce(transaction_status, ''), coalesce(status_description, ''), COALESCE(payment_type, ''), payment_redirect_url, DATE_FORMAT(created_at, '%d %M %Y'),
        			courier_code,  coalesce(courier_tracking_code, ''), item_cost, freight_cost, gross_amount
-       			FROM orders WHERE customer_refer = UUID_TO_BIN(?) AND id = ?`, customerId, request.ID).
-				Scan(&id, &status, &statusDescription, &paymentType, &paymentUrl, &createdAt, &courier, &TrackingCode, &itemCost, &shippingCost, &totalCost)
+       			FROM orders WHERE customer_refer = UUID_TO_BIN(?) AND id = ?`, customerId, request.ID,
+				).
+				Scan(
+					&id, &status, &statusDescription, &paymentType, &paymentUrl, &createdAt, &courier, &TrackingCode,
+					&itemCost, &shippingCost, &totalCost,
+				)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					errChan <- fmt.Errorf("order not found")
@@ -70,7 +95,8 @@ func GetOrder(c *gin.Context) {
 			defer wg.Done()
 			var itemList []models.ItemListOrderDetail
 			rows, err := database.MysqlInstance.
-				Query(`
+				Query(
+					`
 					select oi.id, BIN_TO_UUID(oi.product_refer), oi.on_buy_name, oi.on_buy_price, coalesce(pi.image, ''), oi.quantity, (if (r.id is null, false, true)) as reviewed
 					from order_items oi
 					         left join (select pi.product_refer, CONCAT(BIN_TO_UUID(pi.id), '.webp') as image
@@ -81,7 +107,8 @@ func GetOrder(c *gin.Context) {
 					left join reviews r on oi.id = r.order_item_refer
 					where oi.order_refer = ?
 					  and o.customer_refer = UUID_TO_BIN(?);
-				`, request.ID, customerId)
+				`, request.ID, customerId,
+				)
 			if err != nil {
 				errChan <- err
 				return
@@ -89,7 +116,10 @@ func GetOrder(c *gin.Context) {
 			defer rows.Close()
 			for rows.Next() {
 				var item models.ItemListOrderDetail
-				err := rows.Scan(&item.OrderID, &item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage, &item.Quantity, &item.Reviewed)
+				err := rows.Scan(
+					&item.OrderID, &item.ProductId, &item.ProductName, &item.ProductPrice, &item.ProductImage,
+					&item.Quantity, &item.Reviewed,
+				)
 				if err != nil {
 					errChan <- err
 					return
@@ -106,14 +136,16 @@ func GetOrder(c *gin.Context) {
 			defer wg.Done()
 			var address models.AddressOrderResponse
 			err := database.MysqlInstance.
-				QueryRow(`
+				QueryRow(
+					`
 					select ca.recipient_name, ca.phone_number, ca.full_address, sa.full_name
 					from orders o
 					         left join customer_addresses ca on o.customer_address_refer = ca.id
 					         left join shipping_areas sa on ca.shipping_area_refer = sa.id
 					where o.id = ?
 					  and o.customer_refer = UUID_TO_BIN(?);
-				`, request.ID, customerId).
+				`, request.ID, customerId,
+				).
 				Scan(&address.RecipientName, &address.PhoneNumber, &address.FullAddress, &address.ShippingArea)
 			if err != nil {
 				if err == sql.ErrNoRows {
@@ -151,7 +183,8 @@ func GetOrder(c *gin.Context) {
 	var response []models.OrderResponse
 	// get the order list from database
 	rows, err := database.MysqlInstance.
-		Query(`
+		Query(
+			`
 			SELECT o.id,
 			       DATE_FORMAT(o.created_at, '%d %M %Y') AS created_at,
 			       o.gross_amount,
@@ -182,7 +215,8 @@ func GetOrder(c *gin.Context) {
 			         LEFT JOIN reviews r ON r.order_item_refer = oi2.id
 			WHERE o.customer_refer = UUID_TO_BIN(?)
 			GROUP BY o.id, oi.item_count, p.name;
-			`, customerId)
+			`, customerId,
+		)
 	if err != nil {
 		c.Status(500)
 		return
@@ -190,7 +224,10 @@ func GetOrder(c *gin.Context) {
 	defer rows.Close()
 	for rows.Next() {
 		var item models.OrderResponse
-		err := rows.Scan(&item.ID, &item.CreatedAt, &item.GrossAmount, &item.Status, &item.ItemCount, &item.Image, &item.ProductName, &item.Reviewed)
+		err := rows.Scan(
+			&item.ID, &item.CreatedAt, &item.GrossAmount, &item.Status, &item.ItemCount, &item.Image, &item.ProductName,
+			&item.Reviewed,
+		)
 		if err != nil {
 			c.Status(500)
 			return

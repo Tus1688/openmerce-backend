@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package midtrans
 
 import (
@@ -110,7 +130,10 @@ func HandleNotifications(c *gin.Context) {
 		if request.FraudStatus != "deny" && request.FraudStatus != "challenge" {
 			// update the is_paid to true
 			_, err := database.MysqlInstance.
-				Exec("UPDATE orders SET is_paid = true, transaction_status = ?, payment_type = ? WHERE id = ?", request.TransactionStatus, request.PaymentType, OrderId)
+				Exec(
+					"UPDATE orders SET is_paid = true, transaction_status = ?, payment_type = ? WHERE id = ?",
+					request.TransactionStatus, request.PaymentType, OrderId,
+				)
 			if err != nil {
 				go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 				// retry once
@@ -123,7 +146,10 @@ func HandleNotifications(c *gin.Context) {
 		// set the is_cancelled to true
 	} else if request.TransactionStatus == "cancel" || request.TransactionStatus == "deny" || request.TransactionStatus == "expire" {
 		_, err := database.MysqlInstance.
-			Exec("UPDATE orders SET is_cancelled = true, transaction_status = ?, payment_type = ? WHERE id = ?", request.TransactionStatus, request.PaymentType, OrderId)
+			Exec(
+				"UPDATE orders SET is_cancelled = true, transaction_status = ?, payment_type = ? WHERE id = ?",
+				request.TransactionStatus, request.PaymentType, OrderId,
+			)
 		if err != nil {
 			go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 			// retry once
@@ -133,7 +159,10 @@ func HandleNotifications(c *gin.Context) {
 	} else {
 		// otherwise, update the transaction_status only
 		_, err := database.MysqlInstance.
-			Exec("UPDATE orders SET transaction_status = ?, payment_type = ? WHERE id = ?", request.TransactionStatus, request.PaymentType, OrderId)
+			Exec(
+				"UPDATE orders SET transaction_status = ?, payment_type = ? WHERE id = ?", request.TransactionStatus,
+				request.PaymentType, OrderId,
+			)
 		if err != nil {
 			go logging.InsertLog(logging.ERROR, "midtrans webhook error: unable to update order :"+OrderId)
 			// retry once
@@ -169,38 +198,58 @@ func stockHandler(orderID string) {
 	// acquire the lock to prevent race condition
 	tx, err := database.MysqlInstance.Begin()
 	if err != nil {
-		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to begin transaction, order :"+orderID)
+		go logging.InsertLog(
+			logging.ERROR, "midtrans stock handler error: unable to begin transaction, order :"+orderID,
+		)
 		return
 	}
 	defer tx.Rollback()
 	// lock the rows of inventories table
-	_, err = tx.Exec("SELECT * FROM inventories WHERE id IN (SELECT product_refer FROM order_items WHERE order_refer = ?) FOR UPDATE", orderID)
+	_, err = tx.Exec(
+		"SELECT * FROM inventories WHERE id IN (SELECT product_refer FROM order_items WHERE order_refer = ?) FOR UPDATE",
+		orderID,
+	)
 	if err != nil {
-		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to lock rows of inventories table, order :"+orderID)
+		go logging.InsertLog(
+			logging.ERROR, "midtrans stock handler error: unable to lock rows of inventories table, order :"+orderID,
+		)
 		return
 	}
 	// update and make sure the stock after decreased is not negative
 	for _, item := range items {
 		// set the current quantity in inventories into quantity - item.quantity where id = item.productID and quantity >= item.quantity
 		res, err := tx.
-			Exec("UPDATE inventories SET quantity = quantity - ? WHERE product_refer = UUID_TO_BIN(?) AND quantity >= ?", item.quantity, item.productID, item.quantity)
+			Exec(
+				"UPDATE inventories SET quantity = quantity - ? WHERE product_refer = UUID_TO_BIN(?) AND quantity >= ?",
+				item.quantity, item.productID, item.quantity,
+			)
 		if err != nil {
-			go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to update inventories table, order :"+orderID)
+			go logging.InsertLog(
+				logging.ERROR, "midtrans stock handler error: unable to update inventories table, order :"+orderID,
+			)
 			return
 		}
 		// if the affected rows is 0, then the quantity is not enough
 		affected, err := res.RowsAffected()
 		if err != nil {
-			go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to get affected rows, order :"+orderID)
+			go logging.InsertLog(
+				logging.ERROR, "midtrans stock handler error: unable to get affected rows, order :"+orderID,
+			)
 			return
 		}
 		// abort the transaction and update the order status to deny and set the need_refund to true
 		if affected == 0 {
 			// run the query on different transaction
 			_, err := database.MysqlInstance.
-				Exec("UPDATE orders SET transaction_status = 'deny', need_refund = true, status_description = 'sorry, stock is not enough to fulfill the orders' WHERE id = ?", orderID)
+				Exec(
+					"UPDATE orders SET transaction_status = 'deny', need_refund = true, status_description = 'sorry, stock is not enough to fulfill the orders' WHERE id = ?",
+					orderID,
+				)
 			if err != nil {
-				go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to update order status to deny and need_refund to true, order :"+orderID)
+				go logging.InsertLog(
+					logging.ERROR,
+					"midtrans stock handler error: unable to update order status to deny and need_refund to true, order :"+orderID,
+				)
 				return
 			}
 			return
@@ -208,14 +257,18 @@ func stockHandler(orderID string) {
 	}
 	// commit the transaction
 	if err := tx.Commit(); err != nil {
-		go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to commit transaction, order :"+orderID)
+		go logging.InsertLog(
+			logging.ERROR, "midtrans stock handler error: unable to commit transaction, order :"+orderID,
+		)
 		return
 	}
 	// invalidate redis cache
 	for _, item := range items {
 		err := database.RedisInstance[6].Del(context.Background(), item.productID).Err()
 		if err != nil {
-			go logging.InsertLog(logging.ERROR, "midtrans stock handler error: unable to invalidate redis cache, order :"+orderID)
+			go logging.InsertLog(
+				logging.ERROR, "midtrans stock handler error: unable to invalidate redis cache, order :"+orderID,
+			)
 			return
 		}
 	}

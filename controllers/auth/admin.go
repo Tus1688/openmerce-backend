@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package auth
 
 import (
@@ -17,7 +37,9 @@ func AddNewStaff(c *gin.Context) {
 	}
 	// check if there is a staff with the same username
 	var username string
-	err := database.MysqlInstance.QueryRow("select username from staffs where username = ?", request.Username).Scan(&username)
+	err := database.MysqlInstance.QueryRow(
+		"select username from staffs where username = ?", request.Username,
+	).Scan(&username)
 	if err != nil && err != sql.ErrNoRows {
 		c.Status(500)
 		return
@@ -32,8 +54,10 @@ func AddNewStaff(c *gin.Context) {
 		return
 	}
 	// insert the new staff
-	_, err = database.MysqlInstance.Exec("insert into staffs (username, hashed_password, name, fin_user, inv_user, sys_admin) values (?, ?, ?, ?, ?, ?)",
-		request.Username, request.Password, request.Name, request.FinUser, request.InvUser, request.SysAdmin)
+	_, err = database.MysqlInstance.Exec(
+		"insert into staffs (username, hashed_password, name, fin_user, inv_user, sys_admin) values (?, ?, ?, ?, ?, ?)",
+		request.Username, request.Password, request.Name, request.FinUser, request.InvUser, request.SysAdmin,
+	)
 	if err != nil {
 		c.Status(500)
 		return
@@ -54,7 +78,9 @@ func GetStaff(c *gin.Context) {
 		var staffs []models.ListStaff
 		for rows.Next() {
 			var staff models.ListStaff
-			if err := rows.Scan(&staff.ID, &staff.Username, &staff.Name, &staff.FinUser, &staff.InvUser, &staff.SysAdmin); err != nil {
+			if err := rows.Scan(
+				&staff.ID, &staff.Username, &staff.Name, &staff.FinUser, &staff.InvUser, &staff.SysAdmin,
+			); err != nil {
 				c.Status(500)
 				return
 			}
@@ -100,7 +126,10 @@ func UpdateStaff(c *gin.Context) {
 	}
 	if request.Password != "" {
 		if !request.PasswordIsValid() {
-			c.JSON(400, gin.H{"error": "Password must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 special character and 1 number"})
+			c.JSON(
+				400,
+				gin.H{"error": "Password must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 special character and 1 number"},
+			)
 			return
 		}
 		if err := request.HashPassword(); err != nil {
@@ -160,7 +189,9 @@ func DeleteStaff(c *gin.Context) {
 		return
 	}
 	//	update the deleted_at column to the current timestamp
-	res, err := database.MysqlInstance.Exec("UPDATE staffs SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at is null", request.ID)
+	res, err := database.MysqlInstance.Exec(
+		"UPDATE staffs SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at is null", request.ID,
+	)
 	if err != nil {
 		c.Status(500)
 		return

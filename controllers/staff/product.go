@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package staff
 
 import (
@@ -34,7 +54,9 @@ func AddNewProduct(c *gin.Context) {
 	go func(id uint) {
 		defer wg.Done()
 		var exist int8
-		err := database.MysqlInstance.QueryRow("SELECT 1 FROM categories WHERE id = ? AND deleted_at IS NULL", id).Scan(&exist)
+		err := database.MysqlInstance.QueryRow(
+			"SELECT 1 FROM categories WHERE id = ? AND deleted_at IS NULL", id,
+		).Scan(&exist)
 		if exist != 1 {
 			errChan <- errors.New("category not found")
 			return
@@ -75,8 +97,11 @@ func AddNewProduct(c *gin.Context) {
 	if existingProductID != uuid.Nil {
 		//	update the deleted_at to NULL
 		_, err = database.MysqlInstance.
-			Exec("UPDATE products SET deleted_at = NULL, created_at = CURRENT_TIMESTAMP, updated_at = NULL, description = ?, price = ?, weight = ?, category_refer = ?, cumulative_review = 0, length = ?, width = ?, height = ?  WHERE id = UUID_TO_BIN(?)",
-				request.Description, request.Price, request.Weight, request.CategoryID, request.Length, request.Width, request.Height, existingProductID)
+			Exec(
+				"UPDATE products SET deleted_at = NULL, created_at = CURRENT_TIMESTAMP, updated_at = NULL, description = ?, price = ?, weight = ?, category_refer = ?, cumulative_review = 0, length = ?, width = ?, height = ?  WHERE id = UUID_TO_BIN(?)",
+				request.Description, request.Price, request.Weight, request.CategoryID, request.Length, request.Width,
+				request.Height, existingProductID,
+			)
 		if err != nil {
 			c.Status(500)
 			go logging.InsertLog(logging.ERROR, "2-cat:"+err.Error())
@@ -87,8 +112,11 @@ func AddNewProduct(c *gin.Context) {
 		id = uuid.New()
 		// insert the new product
 		_, err = database.MysqlInstance.
-			Exec("INSERT INTO products (id, name, description, price, weight, category_refer, length, width, height) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?, ?)",
-				id, request.Name, request.Description, request.Price, request.Weight, request.CategoryID, request.Length, request.Width, request.Height)
+			Exec(
+				"INSERT INTO products (id, name, description, price, weight, category_refer, length, width, height) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?, ?)",
+				id, request.Name, request.Description, request.Price, request.Weight, request.CategoryID,
+				request.Length, request.Width, request.Height,
+			)
 		if err != nil {
 			//	check if the product name already exists
 			if strings.Contains(err.Error(), "Duplicate entry") {
@@ -103,12 +131,16 @@ func AddNewProduct(c *gin.Context) {
 	// insert the new product into inventories
 	if existingProductID != uuid.Nil {
 		_, err = database.MysqlInstance.
-			Exec("UPDATE inventories SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE product_refer = UUID_TO_BIN(?)",
-				request.InitialStock, existingProductID)
+			Exec(
+				"UPDATE inventories SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE product_refer = UUID_TO_BIN(?)",
+				request.InitialStock, existingProductID,
+			)
 	} else {
 		_, err = database.MysqlInstance.
-			Exec("INSERT INTO inventories (product_refer, quantity, updated_at) VALUE (UUID_TO_BIN(?), ?, CURRENT_TIMESTAMP)",
-				id, request.InitialStock)
+			Exec(
+				"INSERT INTO inventories (product_refer, quantity, updated_at) VALUE (UUID_TO_BIN(?), ?, CURRENT_TIMESTAMP)",
+				id, request.InitialStock,
+			)
 	}
 	if err != nil {
 		go logging.InsertLog(logging.ERROR, "4-inventory:"+err.Error())
@@ -126,7 +158,9 @@ func AddImage(c *gin.Context) {
 	}
 	// check if the product exists
 	var exist int8
-	err := database.MysqlInstance.QueryRow("SELECT 1 FROM products WHERE id = UUID_TO_BIN(?)", request.ProductID).Scan(&exist)
+	err := database.MysqlInstance.QueryRow(
+		"SELECT 1 FROM products WHERE id = UUID_TO_BIN(?)", request.ProductID,
+	).Scan(&exist)
 	if err != nil {
 		c.Status(404)
 		return
@@ -191,8 +225,10 @@ func AddImage(c *gin.Context) {
 	}
 	//	insert the response.File into product_images
 	_, err = database.MysqlInstance.
-		Exec("INSERT INTO product_images (id, product_refer) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?))",
-			strings.Replace(response.File, ".webp", "", 1), request.ProductID)
+		Exec(
+			"INSERT INTO product_images (id, product_refer) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?))",
+			strings.Replace(response.File, ".webp", "", 1), request.ProductID,
+		)
 	if err != nil {
 		go logging.InsertLog(logging.ERROR, "9-addimg:"+err.Error())
 		c.Status(500)
@@ -208,7 +244,10 @@ func DeleteProduct(c *gin.Context) {
 		return
 	}
 	//	try to delete the product by set deleted_at to current timestamp
-	res, err := database.MysqlInstance.Exec("UPDATE products SET deleted_at = CURRENT_TIMESTAMP WHERE id = UUID_TO_BIN(?) AND deleted_at IS NULL", request.ID)
+	res, err := database.MysqlInstance.Exec(
+		"UPDATE products SET deleted_at = CURRENT_TIMESTAMP WHERE id = UUID_TO_BIN(?) AND deleted_at IS NULL",
+		request.ID,
+	)
 	if err != nil {
 		go logging.InsertLog(logging.ERROR, "1-delprod"+err.Error())
 		c.Status(500)
@@ -227,7 +266,9 @@ func DeleteProduct(c *gin.Context) {
 	}
 	//	try to delete product_images
 	var imageUrls []string
-	rows, err := database.MysqlInstance.Query("SELECT BIN_TO_UUID(id) FROM product_images WHERE product_refer = UUID_TO_BIN(?)", request.ID)
+	rows, err := database.MysqlInstance.Query(
+		"SELECT BIN_TO_UUID(id) FROM product_images WHERE product_refer = UUID_TO_BIN(?)", request.ID,
+	)
 	if err != nil {
 		go logging.InsertLog(logging.ERROR, "3-delprod"+err.Error())
 		c.Status(500)
@@ -324,8 +365,10 @@ func DeleteImage(c *gin.Context) {
 	var exist int8
 	// strips FileName replace ".webp" with "" to get the id
 	err := database.MysqlInstance.
-		QueryRow("SELECT 1 FROM product_images WHERE id = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)",
-			strings.Replace(request.FileName, ".webp", "", 1), request.ProductID).Scan(&exist)
+		QueryRow(
+			"SELECT 1 FROM product_images WHERE id = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)",
+			strings.Replace(request.FileName, ".webp", "", 1), request.ProductID,
+		).Scan(&exist)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.Status(404)
@@ -362,7 +405,10 @@ func DeleteImage(c *gin.Context) {
 	}
 	//	delete the image from product_images
 	_, err = database.MysqlInstance.
-		Exec("DELETE FROM product_images WHERE id = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)", strings.Replace(request.FileName, ".webp", "", 1), request.ProductID)
+		Exec(
+			"DELETE FROM product_images WHERE id = UUID_TO_BIN(?) AND product_refer = UUID_TO_BIN(?)",
+			strings.Replace(request.FileName, ".webp", "", 1), request.ProductID,
+		)
 	if err != nil {
 		go logging.InsertLog(logging.ERROR, "5-delimg"+err.Error())
 		c.Status(500)
@@ -400,11 +446,16 @@ func UpdateProduct(c *gin.Context) {
 		go func(name string) {
 			defer wg.Done()
 			var deletedName string
-			_ = database.MysqlInstance.QueryRow("SELECT LEFT(name, 60) FROM products WHERE name = ? AND deleted_at IS NOT NULL", name).Scan(&deletedName)
+			_ = database.MysqlInstance.QueryRow(
+				"SELECT LEFT(name, 60) FROM products WHERE name = ? AND deleted_at IS NOT NULL", name,
+			).Scan(&deletedName)
 			if deletedName != "" {
 				//	update the deleted product name into deletedName + "_deleted" + current datetime (YYYY-MM-DD HH:MM)
 				_, err := database.MysqlInstance.
-					Exec("UPDATE products SET name = CONCAT(?, '_deleted_', DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i')) WHERE name = ? AND deleted_at IS NOT NULL", deletedName, name)
+					Exec(
+						"UPDATE products SET name = CONCAT(?, '_deleted_', DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i')) WHERE name = ? AND deleted_at IS NOT NULL",
+						deletedName, name,
+					)
 				if err != nil {
 					errChan <- err
 					return
@@ -431,7 +482,9 @@ func UpdateProduct(c *gin.Context) {
 		go func(id uint) {
 			defer wg.Done()
 			var exist int8
-			err := database.MysqlInstance.QueryRow("SELECT 1 FROM categories WHERE id = ? AND deleted_at IS NULL", id).Scan(&exist)
+			err := database.MysqlInstance.QueryRow(
+				"SELECT 1 FROM categories WHERE id = ? AND deleted_at IS NULL", id,
+			).Scan(&exist)
 			if exist != 1 {
 				errChan <- errors.New("category not found")
 				return
@@ -533,7 +586,8 @@ func ClearFreightCache(productID string) {
 func GetProduct(c *gin.Context) {
 	var response []models.HomepageProduct
 	rows, err := database.MysqlInstance.
-		Query(`
+		Query(
+			`
 			SELECT
 			    BIN_TO_UUID(p.id) AS id,
 			    p.name,
@@ -561,7 +615,8 @@ func GetProduct(c *gin.Context) {
 			    p.deleted_at IS NULL
 			GROUP BY
 			    p.id,
-			    image`)
+			    image`,
+		)
 	if err != nil {
 		c.Status(500)
 		return

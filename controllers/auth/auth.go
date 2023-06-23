@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package auth
 
 import (
@@ -60,10 +80,12 @@ func LoginCustomer(c *gin.Context) {
 		c.SetCookie("ac_cus", token, 0, "/", "", false, true)
 		c.SetCookie("ref_cus", refreshToken, 0, "/", "", false, true)
 	}
-	c.JSON(200, gin.H{
-		"first_name": customer.FirstName,
-		"last_name":  customer.LastName,
-	})
+	c.JSON(
+		200, gin.H{
+			"first_name": customer.FirstName,
+			"last_name":  customer.LastName,
+		},
+	)
 }
 
 func LoginStaff(c *gin.Context) {
@@ -74,7 +96,10 @@ func LoginStaff(c *gin.Context) {
 	}
 	var staff models.StaffAuth
 	err := database.MysqlInstance.
-		QueryRow("SELECT id, username, hashed_password, fin_user, inv_user, sys_admin FROM staffs WHERE username = ? and deleted_at is null", request.Username).
+		QueryRow(
+			"SELECT id, username, hashed_password, fin_user, inv_user, sys_admin FROM staffs WHERE username = ? and deleted_at is null",
+			request.Username,
+		).
 		Scan(&staff.ID, &staff.Username, &staff.HashedPassword, &staff.FinUser, &staff.InvUser, &staff.SysAdmin)
 	if err != nil {
 		c.Status(401)
@@ -103,7 +128,9 @@ func LoginStaff(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	token, err := auth.GenerateJWTAccessTokenStaff(staff.ID, staff.Username, staff.FinUser, staff.InvUser, staff.SysAdmin, jti)
+	token, err := auth.GenerateJWTAccessTokenStaff(
+		staff.ID, staff.Username, staff.FinUser, staff.InvUser, staff.SysAdmin, jti,
+	)
 	if err != nil {
 		c.Status(500)
 		return
@@ -117,12 +144,14 @@ func LoginStaff(c *gin.Context) {
 		c.SetCookie("ac_stf", token, 0, "/", "", false, true)
 		c.SetCookie("ref_stf", refreshToken, 0, "/", "", false, true)
 	}
-	c.JSON(200, gin.H{
-		"username":  staff.Username,
-		"fin_user":  staff.FinUser,
-		"inv_user":  staff.InvUser,
-		"sys_admin": staff.SysAdmin,
-	})
+	c.JSON(
+		200, gin.H{
+			"username":  staff.Username,
+			"fin_user":  staff.FinUser,
+			"inv_user":  staff.InvUser,
+			"sys_admin": staff.SysAdmin,
+		},
+	)
 }
 
 func LogoutCustomer(c *gin.Context) {

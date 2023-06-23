@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package customer
 
 import (
@@ -32,8 +52,10 @@ func CreateReview(c *gin.Context) {
 	// check if the order id belongs to the customer
 	var exist int8
 	err = database.MysqlInstance.
-		QueryRow("SELECT 1 FROM order_items oi LEFT JOIN orders o on oi.order_refer = o.id WHERE o.customer_refer = UUID_TO_BIN(?) AND oi.id = ?",
-			customerId, request.OrderID).Scan(&exist)
+		QueryRow(
+			"SELECT 1 FROM order_items oi LEFT JOIN orders o on oi.order_refer = o.id WHERE o.customer_refer = UUID_TO_BIN(?) AND oi.id = ?",
+			customerId, request.OrderID,
+		).Scan(&exist)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.Status(404)
@@ -44,9 +66,11 @@ func CreateReview(c *gin.Context) {
 	}
 	// insert the review
 	_, err = database.MysqlInstance.
-		Exec(`INSERT INTO reviews (order_item_refer, product_refer, rating, review) 
+		Exec(
+			`INSERT INTO reviews (order_item_refer, product_refer, rating, review) 
 		VALUES (?, (SELECT oi.product_refer FROM order_items oi WHERE oi.id = ?), ?, ?)`,
-			request.OrderID, request.OrderID, request.Rating, request.Review)
+			request.OrderID, request.OrderID, request.Rating, request.Review,
+		)
 	if err != nil {
 		// check if the review already exists
 		if strings.Contains(err.Error(), "Duplicate entry") {
@@ -71,7 +95,8 @@ func GetReview(c *gin.Context) {
 	customerId := claims.Uid
 	var response []models.ReviewResponseCustomer
 	rows, err := database.MysqlInstance.
-		Query(`
+		Query(
+			`
 			SELECT BIN_TO_UUID(r.id),
 			       BIN_TO_UUID(p.id),
 			       p.name,
@@ -88,7 +113,8 @@ func GetReview(c *gin.Context) {
 			                          from product_images
 			                          group by product_refer) pi) pi on pi.product_refer = oi.product_refer
 			WHERE o.customer_refer = UUID_TO_BIN(?);
-			`, customerId)
+			`, customerId,
+		)
 	if err != nil {
 		c.Status(500)
 		return
@@ -96,8 +122,10 @@ func GetReview(c *gin.Context) {
 	defer rows.Close()
 	for rows.Next() {
 		var review models.ReviewResponseCustomer
-		err = rows.Scan(&review.ID, &review.ProductID, &review.ProductName, &review.ProductImage, &review.Rating,
-			&review.Review, &review.CreatedAt)
+		err = rows.Scan(
+			&review.ID, &review.ProductID, &review.ProductName, &review.ProductImage, &review.Rating,
+			&review.Review, &review.CreatedAt,
+		)
 		if err != nil {
 			c.Status(500)
 			return

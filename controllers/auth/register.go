@@ -1,3 +1,23 @@
+// Copyright (c) 2023. Tus1688
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package auth
 
 import (
@@ -45,7 +65,10 @@ func RegisterEmail(c *gin.Context) {
 
 	_, err = database.RedisInstance[0].Get(context.Background(), request.Email).Result()
 	if err != redis.Nil {
-		c.JSON(409, gin.H{"error": "You have already requested a verification code. Please wait 5 minutes before requesting another one."})
+		c.JSON(
+			409,
+			gin.H{"error": "You have already requested a verification code. Please wait 5 minutes before requesting another one."},
+		)
 		return
 	}
 
@@ -57,18 +80,22 @@ func RegisterEmail(c *gin.Context) {
 		return
 	}
 
-	_, err = database.RedisInstance[0].Set(context.Background(), request.Email, randNumber.String(), time.Minute*5).Result()
+	_, err = database.RedisInstance[0].Set(
+		context.Background(), request.Email, randNumber.String(), time.Minute*5,
+	).Result()
 	if err != nil {
 		c.Status(500)
 		return
 	}
-	err = mailgun.SendEmail(mailgun.Send{
-		FromName:    "Openmerce Auth Service",
-		FromAddress: "noreply",
-		To:          request.Email,
-		Subject:     "Openmerce Email Verification",
-		Body:        "Your verification code is: " + randNumber.String(),
-	})
+	err = mailgun.SendEmail(
+		mailgun.Send{
+			FromName:    "Openmerce Auth Service",
+			FromAddress: "noreply",
+			To:          request.Email,
+			Subject:     "Openmerce Email Verification",
+			Body:        "Your verification code is: " + randNumber.String(),
+		},
+	)
 	if err != nil {
 		c.Status(500)
 		return
@@ -180,7 +207,10 @@ func CreateAccount(c *gin.Context) {
 	}
 	// validate the password
 	if !request.PasswordIsValid() {
-		c.JSON(400, gin.H{"error": "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"})
+		c.JSON(
+			400,
+			gin.H{"error": "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"},
+		)
 		return
 	}
 	// validate the gender
@@ -195,8 +225,10 @@ func CreateAccount(c *gin.Context) {
 	}
 	// try to input the user into the database, if there is a conflict then the email is already registered and should return 409
 	_, err = database.MysqlInstance.
-		Exec("insert into customers (email, hashed_password, first_name, last_name, birth_date, gender) values (?, ?, ?, ?, ?, ?)",
-			request.Email, request.Password, request.FirstName, request.LastName, request.BirthDate, request.Gender)
+		Exec(
+			"insert into customers (email, hashed_password, first_name, last_name, birth_date, gender) values (?, ?, ?, ?, ?, ?)",
+			request.Email, request.Password, request.FirstName, request.LastName, request.BirthDate, request.Gender,
+		)
 	if err != nil {
 		// check from error if it is a duplicate entry error
 		if strings.Contains(err.Error(), "Duplicate entry") {
